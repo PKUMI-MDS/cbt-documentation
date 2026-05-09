@@ -106,20 +106,20 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 ### P1 - Exam Reliability
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Fullscreen enforcement** | ❌ Belum | Request fullscreen saat exam start, detect exit |
-| 2 | **Tab switch detection** | ❌ Belum | Detect visibility change, kirim violation |
-| 3 | **Disable right click/copy** | ❌ Belum | Di area exam |
-| 4 | **Warning modal violation** | ❌ Belum | Saat threshold terlewati |
-| 5 | **Route guard saat exam aktif** | ❌ Belum | Cegah keluar tanpa konfirmasi |
+| 1 | **Fullscreen enforcement** | ✅ Selesai | Request fullscreen saat exam start, detect exit |
+| 2 | **Tab switch detection** | ✅ Selesai | Detect visibility change, kirim violation |
+| 3 | **Disable right click/copy** | ✅ Selesai | Di area exam |
+| 4 | **Warning modal violation** | ✅ Selesai | Saat threshold terlewati |
+| 5 | **Route guard saat exam aktif** | ✅ Selesai | Cegah keluar tanpa konfirmasi |
 
 ### P2 - Polish
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Loading skeleton** | ❌ Belum | Dashboard, history, exam perlu skeleton |
-| 2 | **State management** | ❌ Belum | TanStack Query/SWR atau Context API |
-| 3 | **E2E tests** | ❌ Belum | Playwright |
-| 4 | **Responsive mobile exam** | ⚠️ Parsial | Perlu cek ulang |
-| 5 | **Accessibility** | ⚠️ Parsial | Focus state, aria, keyboard navigation |
+| 1 | **Loading skeleton** | ✅ Selesai | Dashboard, history, exam perlu skeleton |
+| 2 | **State management** | ✅ Selesai | Menggunakan @tanstack/react-query |
+| 3 | **E2E tests** | ⏸️ Ditunda | Playwright (Dikerjakan nanti) |
+| 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
+| 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
 
 ---
 
@@ -134,14 +134,14 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Start/resume exam
 - ✅ Get question/save answer/submit
 
-### P1 - Exam Reliability
-- Fullscreen + tab switch detection
-- Violation logging client events
-- Result visibility
-- Loading skeleton
+### P1 - Exam Reliability ✅ DONE
+- ✅ Fullscreen + tab switch detection
+- ✅ Violation logging client events
+- ✅ Result visibility
+- ✅ Loading skeleton
 
 ### P2 - Polish
-- Better UX for retake
-- Richer history and profile
-- E2E tests
-- State management layer
+- ✅ Better UX for retake
+- ✅ Richer history and profile
+- ⏸️ E2E tests (Ditunda)
+- ✅ State management layer
