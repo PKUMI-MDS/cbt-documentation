@@ -13,15 +13,24 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | Area | Status |
 |------|--------|
 | **Auth** | ✅ Cookie-based, layout guard, logout |
-| **Dashboard** | ✅ Stats real-time dari API |
-| **Question Banks** | ✅ CRUD lengkap |
-| **Questions** | ✅ CRUD + media upload + RTE |
+| **Dashboard** | ✅ Stats real-time dari API + chart |
+| **Question Banks** | ✅ CRUD lengkap + warning usage |
+| **Questions** | ✅ CRUD + media upload + **RTE TipTap** + preview image/audio |
 | **Exam Packages** | ✅ CRUD + bank mapping |
 | **Exam Sessions** | ✅ CRUD + publish/close + **participant management** |
 | **User Management** | ✅ Approve/reject/reset password (actions ready) |
 | **Payment Proofs** | ✅ Approve/reject + **file preview via API** |
 | **Result Export** | ✅ Export dengan filter session |
 | **Related Links** | ✅ Navigasi antar entitas di detail page |
+| **Loading State** | ✅ SubmitButton dengan useFormStatus |
+| **Confirmation Modal** | ✅ DeleteConfirmForm + RemoveParticipantForm |
+| **Toast Notification** | ✅ Sonner installed di layout root |
+| **Validation Error** | ✅ Laravel 422 parsing dengan useActionState |
+| **Skeleton Loading** | ✅ Dashboard + module page |
+| **Breadcrumb** | ✅ ModuleDetailPage, MonitoringDetailPage, ResultDetailPage, ViolationDetailPage |
+| **Monitoring** | ✅ Custom detail page + live refresh fetch data baru |
+| **Violations** | ✅ Custom detail page + severity color coding |
+| **Card View Mobile** | ✅ Table di desktop, card view di mobile |
 
 ---
 
@@ -46,11 +55,14 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Filter dan query params
 - ✅ Mutation helpers (POST/PATCH/DELETE/multipart)
 - ✅ Cache policy `no-store`
+- ✅ **Remove production fallback mock data** — error state jelas saat API gagal
 
 ### 4. Dashboard Admin
 - ✅ Count dari endpoint per status
 - ✅ Newest pending dari API
 - ✅ Link filter ke list terfilter
+- ✅ **Skeleton loading** saat data kosong
+- ✅ **Stats chart** — Bar chart dengan recharts
 
 ### 5. Payment Proof Review
 - ✅ List dengan filter status
@@ -72,25 +84,27 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 ### 8. Question Bank Management
 - ✅ CRUD lengkap
 - ✅ Questions count
+- ✅ **Warning bank dipakai aktif** — tampil package yang menggunakan bank saat detail
 
 ### 9. Question Management
 - ✅ CRUD dengan multipart
-- ✅ HTML editor (stem, explanation)
+- ✅ **Rich text editor (TipTap)** — toolbar dengan bold, italic, underline, heading, align, list, quote, code block
 - ✅ Option editor dengan exactly one correct
 - ✅ Media upload (image/audio)
 - ✅ `difficulty_level` field
+- ✅ **Media preview** — image (`<img>`) dan audio (`<audio>`) di form dan detail
 
 ### 10. Exam Package Builder
 - ✅ CRUD dengan banks array
 - ✅ Bank mapping UI
 - ✅ Validasi stok soal dari backend
 
-### 11. Exam Session Management (Updated - 9 Mei 2026)
+### 11. Exam Session Management
 - ✅ List dengan filter status/date
 - ✅ Detail dengan semua field
 - ✅ Create/edit form
 - ✅ Publish/close actions
-- ✅ **Participant Management UI** (baru):
+- ✅ **Participant Management UI**:
   - ✅ Manual assign dengan User ID input
   - ✅ Auto generate participants button
   - ✅ Remove participant per row
@@ -100,20 +114,27 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 ### 12. Monitoring
 - ✅ Attempts list dengan filter
 - ✅ Violations list
+- ✅ **Custom detail page** dengan live countdown, progress bar, stats grid
+- ✅ **Live refresh** fetch data baru setiap 30 detik via `/api/monitoring/{id}`
 
 ### 13. Results dan Export
 - ✅ Results list dengan filter session_id
 - ✅ Export Excel/CSV via route handler
-- ✅ **Export dengan session_id filter** (baru)
+- ✅ **Export dengan session_id filter**
+- ✅ **Custom detail page** dengan score visualization
 
 ### 14. Forms, Mutations, dan Revalidation
 - ✅ Server actions untuk semua modul
 - ✅ `revalidatePath` setelah mutation
 - ✅ Error redirect dengan query params
+- ✅ **Loading state tombol action** — SubmitButton dengan useFormStatus
+- ✅ **Confirmation modal** — DeleteConfirmForm, RemoveParticipantForm
+- ✅ **Toast notification** — Sonner di root layout
+- ✅ **Validation error mapping** — Laravel 422 errors ke field-level dengan useActionState
 
-### 15. Detail Page Generic (Updated - 9 Mei 2026)
+### 15. Detail Page Generic
 - ✅ Semua module menampilkan field penting
-- ✅ **Related links** (baru):
+- ✅ **Related links**:
   - User → Payment proofs, Test approvals
   - Payment Proof → User detail, Test approval
   - Test Approval → User detail, Payment proof
@@ -121,6 +142,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
   - Exam Session → Exam package, Results
   - Monitoring → User detail, Session detail
 - ✅ Action contextual di detail page
+- ✅ **Breadcrumb navigation** — Dashboard > Module > Detail
 
 ### 16. UI/UX Admin
 - ✅ Empty state per module
@@ -128,59 +150,39 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Filter bar
 - ✅ Pagination controls
 - ✅ Consistent badge/tone
+- ✅ **Skeleton loading** — Dashboard + module page
+- ✅ **Responsive table mobile** — table di desktop, card view di mobile
 
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
 
-### P0 - Integrasi Admin Wajib
-| # | Fitur | Status | Catatan |
-|---|-------|--------|---------|
-| 1 | **Remove production fallback mock** | ❌ Belum | `admin-data.ts` masih punya fallback data |
-| 2 | **Loading state tombol action** | ❌ Belum | Prevent double submit |
-| 3 | **Confirmation modal** | ❌ Belum | Destructive actions (delete, reject) |
-| 4 | **Toast notification** | ❌ Belum | Sukses/error feedback |
-| 5 | **Validation error mapping** | ❌ Belum | Laravel errors → form field |
-
-### P1 - Content Management
-| # | Fitur | Status | Catatan |
-|---|-------|--------|---------|
-| 1 | **Warning bank dipakai aktif** | ❌ Belum | Saat delete/deactivate |
-| 2 | **Media preview di question detail** | ⚠️ Parsial | Hanya filename, belum preview |
-| 3 | **Rich text editor Arabic** | ⚠️ Parsial | HTML textarea, belum RTE proper |
-
-### P2 - Monitoring dan Reporting
-| # | Fitur | Status | Catatan |
-|---|-------|--------|---------|
-| 1 | **Live refresh interval** | ❌ Belum | Auto-refresh monitoring |
-| 2 | **Severity visual** | ❌ Belum | Color coding violations |
-| 3 | **Custom monitoring detail page** | ⚠️ Parsial | Generic page, belum custom |
-| 4 | **Custom violation detail page** | ⚠️ Parsial | Generic page, belum custom |
-
-### UX Polish
-| # | Fitur | Status | Catatan |
-|---|-------|--------|---------|
-| 1 | **Skeleton loading** | ❌ Belum | Saat fetch data |
-| 2 | **Breadcrumb** | ❌ Belum | Navigation trail |
-| 3 | **Responsive table mobile** | ⚠️ Parsial | Overflow-x ada, tapi bisa diperbaiki |
+Tidak ada task yang belum dikerjakan. Semua item dari breakdown sudah selesai.
 
 ---
 
 ## Prioritas Sprint
 
-### P0 - Integrasi Admin Wajib
-- Remove production fallback mock
-- Loading state tombol action
-- Confirmation modal
-- Toast notification
+### P0 - Integrasi Admin Wajib ✅ DONE
+- Remove production fallback mock ✅
+- Loading state tombol action ✅
+- Confirmation modal ✅
+- Toast notification ✅
+- Validation error mapping ✅
 
-### P1 - Content Management ✅ MOSTLY DONE
+### P1 - Content Management ✅ DONE
 - Question bank CRUD ✅
 - Question editor with media/RTE ✅
 - Exam package builder ✅
 - Exam session create/publish/assign ✅
+- Warning bank dipakai ✅
+- RTE proper (TipTap) ✅
 
-### P2 - Monitoring dan Reporting
-- Attempt live monitoring (auto-refresh)
-- Violation detail custom page
-- Dashboard polish
+### P2 - Monitoring dan Reporting ✅ DONE
+- Attempt live monitoring (auto-refresh fetch data) ✅
+- Violation detail custom page ✅
+- Severity color coding ✅
+- Skeleton loading ✅
+- Breadcrumb navigation ✅
+- Dashboard chart ✅
+- Card view mobile ✅
