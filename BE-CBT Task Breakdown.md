@@ -111,10 +111,10 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ### P0 - Harus Sebelum Demo Integrasi
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Authorization Policies** | ❌ Kosong | Folder `app/Policies` belum ada |
-| 2 | **Attempt relasi ke approval** | ❌ Belum | `exam_attempts` belum simpan `test_approval_id` (hanya via registration) |
-| 3 | **Result visibility guard** | ⚠️ Parsial | Score disembunyikan via `show_result_to_user`, tapi endpoint masih akses metadata |
-| 4 | **Save answer option ownership** | ⚠️ Parsial | `selected_option_id` belum divalidasi milik soal di attempt |
+| 1 | **Authorization Policies** | ✅ Selesai | Policies + `authorize()` dipakai di controller |
+| 2 | **Attempt relasi ke approval** | ✅ Selesai | `exam_attempts.test_approval_id` + migrasi backfill |
+| 3 | **Result visibility guard** | ✅ Selesai | Endpoint user tidak lagi bocorkan metadata saat `show_result_to_user = false` |
+| 4 | **Save answer option ownership** | ✅ Selesai | `selected_option_id` divalidasi milik soal di attempt |
 
 ### P1 - MVP Production
 | # | Fitur | Status | Catatan |
@@ -122,7 +122,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | 1 | **Feature tests** | ❌ Kosong | Hanya `ExampleTest.php` default |
 | 2 | **Anti-double login** | ⚠️ Parsial | `user_sessions` dicatat, belum blokir multi-login |
 | 3 | **Audit log** | ⚠️ Parsial | Spatie terpasang, belum ada `LogsActivity` di model |
-| 4 | **Settings endpoint** | ❌ Belum | `GET/PATCH /api/admin/settings/exam` belum ada |
+| 4 | **Settings endpoint** | ✅ Selesai | `GET/PATCH /api/admin/settings/exam` tersedia |
 | 5 | **Session lifecycle** | ⚠️ Parsial | Enum ada `finished/cancelled`, endpoint hanya publish/close |
 | 6 | **HTML sanitasi** | ❌ Belum | `stem_html`, `option_html`, `explanation_html` |
 | 7 | **Signed URL media** | ❌ Belum | Image/audio URL |
@@ -150,10 +150,10 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ## Prioritas Sprint
 
 ### P0 - Harus Diselesaikan Sebelum Demo Integrasi
-- Authorization Policies
-- Attempt relasi ke approval (`test_approval_id`)
-- Result visibility guard
-- Save answer option ownership validation
+- Authorization Policies ✅
+- Attempt relasi ke approval (`test_approval_id`) ✅
+- Result visibility guard ✅
+- Save answer option ownership validation ✅
 
 ### P1 - MVP Production
 - Full test coverage core flow
@@ -168,3 +168,119 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - Versioning bank/package
 - Advanced analytics
 - Notification email/WhatsApp
+
+---
+
+## Urutan Pengerjaan (Termudah -> Tersulit)
+
+Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag prioritas tetap [P0]/[P1]/[P2]/[OPS].
+
+### Core (P0/P1)
+
+1. [P0] Result visibility guard ✅
+	- Effort: S
+	- Scope: sembunyikan detail skor saat `show_result_to_user = false` di semua endpoint user.
+	- DoD: user hanya melihat status selesai dan flag result visible; admin tetap melihat skor penuh.
+
+2. [P0] Validasi ownership `selected_option_id` ✅
+	- Effort: S
+	- Scope: pastikan opsi yang dipilih memang milik question yang sedang dijawab pada attempt.
+	- DoD: validasi 422 bila opsi tidak match; opsi kosong tetap boleh untuk skip.
+
+3. [P1] Settings endpoint exam ✅
+	- Effort: S-M
+	- Scope: `GET/PATCH /api/admin/settings/exam` untuk konfigurasi umum (durasi default, limit anti-cheat, dll).
+	- DoD: storage konsisten (DB/config), validasi request, hanya admin dapat akses.
+
+4. [P0] Authorization policies ✅
+	- Effort: M
+	- Scope: buat policy untuk resource utama dan gunakan `authorize()` di controller.
+	- DoD: semua endpoint admin terlindungi policy; user hanya bisa akses resource miliknya.
+
+5. [P1] Session lifecycle (finish/cancel)
+	- Effort: M
+	- Scope: endpoint/status transition `finished` dan `cancelled`.
+	- DoD: aturan transisi jelas; attempt baru ditolak jika session tidak aktif.
+
+6. [P1] Anti-double login enforcement
+	- Effort: M
+	- Scope: blokir sesi login ganda atau invalidate session lama.
+	- DoD: hanya 1 session aktif per user; audit/log tersedia saat diblokir.
+
+7. [P0] Attempt relasi ke approval ✅
+	- Effort: M-L
+	- Scope: simpan `test_approval_id` ke `exam_attempts` saat start.
+	- DoD: migrasi + backfill untuk data existing; relasi dipakai untuk validasi.
+
+8. [P1] Audit log activity
+	- Effort: M-L
+	- Scope: aktifkan `LogsActivity` di model kritikal (payment proof, approvals, sessions, attempts).
+	- DoD: event approve/reject/publish/submit tercatat dengan actor.
+
+9. [P1] HTML sanitasi konten soal
+	- Effort: M-L
+	- Scope: sanitize `stem_html`, `option_html`, `explanation_html` pada create/update.
+	- DoD: payload berbahaya dibersihkan; content valid tetap utuh.
+
+10. [P1] Signed URL media
+	 - Effort: L
+	 - Scope: generate signed URL untuk image/audio atau proxy endpoint.
+	 - DoD: URL hanya berlaku sementara; akses tanpa token ditolak.
+
+11. [P1] Feature tests core flow
+	 - Effort: L
+	 - Scope: test alur register -> approval -> session -> start -> submit -> result.
+	 - DoD: coverage minimal untuk happy path dan 2-3 negative cases penting.
+
+### Ops (Deployment/Operations)
+
+1. [OPS] Lengkapi `.env.example`
+	- Effort: S
+	- DoD: semua env yang dipakai config dan service tercantum dengan nilai contoh.
+
+2. [OPS] Scheduler jobs
+	- Effort: M
+	- Scope: auto-close session dan auto-submit attempt stale.
+	- DoD: command terjadwal dan safe-guard untuk idempotency.
+
+3. [OPS] Queue worker
+	- Effort: M
+	- Scope: setup queue connection dan job async (mis. export results).
+	- DoD: job berjalan di worker, retry dan timeout terdefinisi.
+
+4. [OPS] Log rotation
+	- Effort: M
+	- Scope: logging harian atau size-based.
+	- DoD: log tidak menumpuk; retention jelas.
+
+5. [OPS] Backup DB dan storage
+	- Effort: L
+	- Scope: backup terjadwal untuk database dan file upload.
+	- DoD: dokumentasi restore dan lokasi backup ada.
+
+### Enhancement (P2)
+
+1. [P2] Import bank soal
+	- Effort: M
+	- Scope: import CSV/Excel untuk question bank + options.
+	- DoD: validasi template dan report error per baris.
+
+2. [P2] Versioning bank/package
+	- Effort: L
+	- Scope: simpan versi soal/paket untuk audit dan rollback.
+	- DoD: attempt menyimpan versi snapshot yang digunakan.
+
+3. [P2] Notification email/WhatsApp
+	- Effort: L
+	- Scope: notifikasi approval, session assigned, dan hasil.
+	- DoD: provider configurable dan bisa dimatikan.
+
+4. [P2] Advanced analytics
+	- Effort: L
+	- Scope: agregasi hasil per sesi/paket/section.
+	- DoD: endpoint admin + export ringkas.
+
+5. [P2] Proctoring webcam
+	- Effort: XL
+	- Scope: integrasi capture dan pelaporan.
+	- DoD: jelas apakah in-scope dan definisi data yang disimpan.
