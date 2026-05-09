@@ -14,11 +14,17 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 |------|--------|
 | **Auth** | ✅ Sanctum, role, middleware |
 | **Database** | ✅ 24 migrations, 20 models, relasi lengkap |
-| **API Endpoints** | ✅ ~45 endpoint (admin + user) |
+| **API Endpoints** | ✅ ~47 endpoint (admin + user) |
 | **Exam Engine** | ✅ Snapshot, randomisasi, timer, scoring |
-| **Payment Proof** | ✅ Upload, approve, reject + **preview endpoint** (baru) |
-| **Question API** | ✅ CRUD + validasi + **bank sync** (baru) |
-| **Session Validation** | ✅ `date_format:H:i` untuk time (baru) |
+| **Payment Proof** | ✅ Upload, approve, reject + preview endpoint |
+| **Question API** | ✅ CRUD + validasi + bank sync |
+| **Session Validation** | ✅ `date_format:H:i` untuk time |
+| **Question Import** | ✅ CSV import + template download |
+| **Feature Tests** | ✅ 21 test cases (Auth, Payment, Question Bank, User Management) |
+| **Queue Worker** | ✅ ExportResultsJob + jobs table + dokumentasi |
+| **Log Rotation** | ✅ daily channel + PowerShell script + dokumentasi |
+| **Backup** | ✅ PowerShell + Bash scripts + dokumentasi |
+| **.env.example** | ✅ Lengkap (66+ env vars) |
 
 ---
 
@@ -30,13 +36,14 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Middleware admin dan active account
 - ✅ Response login membedakan status (pending, rejected, suspended)
 - ✅ Admin bisa login (role check)
+- ✅ Anti-double login: token lama di-revoke saat login baru
 
 ### 2. Registration dan Payment Proof
 - ✅ `POST /api/register`
 - ✅ `GET/POST /api/payment-proofs`
 - ✅ `GET /api/admin/payment-proofs`
 - ✅ `GET /api/admin/payment-proofs/{id}`
-- ✅ **`GET /api/admin/payment-proofs/{id}/preview`** (baru - 9 Mei 2026)
+- ✅ `GET /api/admin/payment-proofs/{id}/preview`
 - ✅ `PATCH /api/admin/payment-proofs/{id}/approve`
 - ✅ `PATCH /api/admin/payment-proofs/{id}/reject`
 - ✅ Saat approve, sistem membuat `test_approval` dan aktifkan akun
@@ -55,54 +62,92 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ CRUD question dengan multipart
 - ✅ Validasi options (minimal 2, exactly 1 correct)
 - ✅ Validasi media berdasarkan question type
-- ✅ **`difficulty_level` field** (baru - 9 Mei 2026)
-- ✅ **`audio_max_play_count` default 1** (baru - 9 Mei 2026)
+- ✅ `difficulty_level` field
+- ✅ `audio_max_play_count` default 1
 - ✅ Guard delete: blok hapus bank soal yang dipakai sesi aktif
 - ✅ Storage image/audio di disk public
+- ✅ **Import soal dari CSV** (`POST /api/admin/questions/import`)
+- ✅ **Download template CSV** (`GET /api/admin/questions/import/template`)
 
 ### 5. Exam Package
 - ✅ CRUD package
-- ✅ **Bank sync via transaction** (baru - 9 Mei 2026)
+- ✅ Bank sync via transaction
 - ✅ Validasi stok soal aktif per bank/section
 - ✅ Validasi unique bank+section combination
 - ✅ Shuffle questions/options
 
 ### 6. Exam Session dan Participant Assignment
 - ✅ CRUD session
-- ✅ Publish/close session
+- ✅ Publish/close/finish/cancel session dengan guard transisi
 - ✅ Manual assign dan auto generate participant
 - ✅ List participants
+- ✅ Delete participant (guard: tidak bisa hapus yang sudah start attempt)
 - ✅ Quota validation
-- ✅ **`date_format:H:i` validation** untuk start/end time (baru - 9 Mei 2026)
+- ✅ `date_format:H:i` validation untuk start/end time
 
 ### 7. Exam Runtime Engine
 - ✅ Start attempt
 - ✅ Generate snapshot attempt questions
 - ✅ Randomisasi option order
 - ✅ Get question by display number
-- ✅ Save answer
+- ✅ Save answer dengan validasi ownership option
 - ✅ Mark doubtful
 - ✅ Navigate
-- ✅ Heartbeat
+- ✅ Heartbeat dengan auto-submit saat timeout
 - ✅ Submit
 - ✅ Scoring
-- ✅ **Fix relasi `questionOptions`** (baru - 9 Mei 2026)
+- ✅ Fix relasi `questionOptions`
+- ✅ Attempt relasi ke `test_approval_id`
 
 ### 8. Scoring dan Result Visibility
 - ✅ `ScoringService` menghitung total, listening, structure, reading
 - ✅ Result resource
 - ✅ Admin results endpoint
 - ✅ Export results to Excel
+- ✅ Result visibility guard: user tidak melihat skor jika `show_result_to_user = false`
 
 ### 9. Anti-Cheat dan Monitoring
 - ✅ Violation log endpoint
 - ✅ Audio play log endpoint
-- ✅ Admin list attempts/results/violations
+- ✅ Admin list attempts/results/violations/activity-logs
+- ✅ Violation disimpan dengan payload JSON
 
-### 10. API Response dan Documentation
+### 10. Settings
+- ✅ `GET/PATCH /api/admin/settings/exam` dengan type casting (int/bool)
+- ✅ Default values: duration=120, tab_switch=3, fullscreen_exit=3, shuffle=true
+
+### 11. Audit Log
+- ✅ `LogsActivity` trait di model: PaymentProof, TestApproval, ExamSession, ExamAttempt
+- ✅ `GET /api/admin/activity-logs` dengan filter (log_name, subject_type, event, causer_id)
+
+### 12. Media
+- ✅ `GET /api/media/{path}` dengan signed URL validation
+- ✅ Directory traversal protection
+- ✅ Cache-Control header
+
+### 13. Scheduler
+- ✅ `sessions:auto-close` — auto-close session yang lewat end_time (setiap 5 menit)
+- ✅ `attempts:auto-submit-stale` — auto-submit attempt timeout (setiap 5 menit)
+
+### 14. API Response dan Documentation
 - ✅ Standard response format
 - ✅ `API_DOCUMENTATION.md` lengkap
 - ✅ Payload examples
+
+### 15. Feature Tests
+- ✅ `AuthFlowTest` — register, login/logout, double-login, wrong password
+- ✅ `AdminPaymentFlowTest` — list, filter, show, approve, reject, guard, non-admin
+- ✅ `AdminQuestionBankFlowTest` — CRUD bank, CRUD question, validation, guard delete
+- ✅ `AdminUserManagementTest` — list, search, show, approve, reject, reset password
+- ✅ `HtmlSanitizerTest` — 9 tests
+- ✅ `SessionStatusTransitionTest` — 10 tests
+
+### 16. Operations
+- ✅ `.env.example` lengkap (66+ env vars)
+- ✅ Queue worker: `ExportResultsJob` dengan tries=3, timeout=300
+- ✅ Jobs table migration tersedia
+- ✅ Log rotation: daily channel + PowerShell script
+- ✅ Backup: PowerShell + Bash scripts dengan retention
 
 ---
 
@@ -112,25 +157,26 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Authorization Policies** | ✅ Selesai | Policies + `authorize()` dipakai di controller |
-| 2 | **Attempt relasi ke approval** | ✅ Selesai | `exam_attempts.test_approval_id` + migrasi backfill |
-| 3 | **Result visibility guard** | ✅ Selesai | Endpoint user tidak lagi bocorkan metadata saat `show_result_to_user = false` |
-| 4 | **Save answer option ownership** | ✅ Selesai | `selected_option_id` divalidasi milik soal di attempt |
+| 2 | **Attempt relasi ke approval** | ✅ Selesai | `exam_attempts.test_approval_id` + relasi model |
+| 3 | **Result visibility guard** | ✅ Selesai | Endpoint user tidak bocorkan metadata saat `show_result_to_user = false` |
+| 4 | **Save answer option ownership** | ✅ Selesai | `selected_option_id` divalidasi milik soal di attempt via `SaveAnswerRequest` |
 
 ### P1 - MVP Production
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Feature tests** | ❌ Kosong | Hanya `ExampleTest.php` default |
+| 1 | **Feature tests** | ✅ Selesai | 21 tests: Auth, Payment, Question Bank, User Management |
 | 2 | **Anti-double login** | ✅ Selesai | Token lama di-revoke, hanya 1 sesi aktif |
 | 3 | **Audit log** | ✅ Selesai | `LogsActivity` di model + endpoint activity log |
 | 4 | **Settings endpoint** | ✅ Selesai | `GET/PATCH /api/admin/settings/exam` tersedia |
 | 5 | **Session lifecycle** | ✅ Selesai | Endpoint finish/cancel + guard transisi |
 | 6 | **HTML sanitasi** | ✅ Selesai | HtmlSanitizer di create/update question |
-| 7 | **Signed URL media** | ✅ Selesai | Media proxy + signed URL |
+| 7 | **Signed URL media** | ✅ Selesai | Media proxy + signed URL validation |
+| 8 | **Anti-cheat threshold enforcement** | ⚠️ Parsial | Violation dilog tapi belum ada auto-action saat threshold tercapai |
 
 ### P2 - Enhancement
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Import bank soal** | ❌ Belum | |
+| 1 | **Import bank soal** | ✅ Selesai | CSV import + template download |
 | 2 | **Versioning bank/package** | ❌ Belum | |
 | 3 | **Notification email/WhatsApp** | ❌ Belum | |
 | 4 | **Advanced analytics** | ❌ Belum | |
@@ -139,11 +185,11 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ### Deployment dan Operations
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **`.env.example` lengkap** | ⚠️ Parsial | Perlu cek semua env var |
-| 2 | **Queue worker** | ❌ Belum | Untuk job async |
+| 1 | **`.env.example` lengkap** | ✅ Selesai | Semua env var tercantum |
+| 2 | **Queue worker** | ✅ Selesai | `ExportResultsJob` + dokumentasi |
 | 3 | **Scheduler** | ✅ Selesai | Auto-close session, auto-submit stale |
-| 4 | **Log rotation** | ❌ Belum | |
-| 5 | **Backup DB dan storage** | ❌ Belum | |
+| 4 | **Log rotation** | ✅ Selesai | daily channel + PowerShell script |
+| 5 | **Backup DB dan storage** | ✅ Selesai | PowerShell + Bash scripts |
 
 ---
 
@@ -156,15 +202,15 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - Save answer option ownership validation ✅
 
 ### P1 - MVP Production
-- Full test coverage core flow
+- Full test coverage core flow ✅
 - Settings endpoint ✅
 - Anti-double login ✅
-- Anti-cheat threshold enforcement
+- Anti-cheat threshold enforcement ⚠️ (violation logged, auto-action pending)
 - Strong audit log ✅
 - HTML sanitasi ✅
 
 ### P2 - Enhancement
-- Import bank soal
+- Import bank soal ✅
 - Versioning bank/package
 - Advanced analytics
 - Notification email/WhatsApp
@@ -189,8 +235,8 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 
 3. [P1] Settings endpoint exam ✅
 	- Effort: S-M
-	- Scope: `GET/PATCH /api/admin/settings/exam` untuk konfigurasi umum (durasi default, limit anti-cheat, dll).
-	- DoD: storage konsisten (DB/config), validasi request, hanya admin dapat akses.
+	- Scope: `GET/PATCH /api/admin/settings/exam` untuk konfigurasi umum.
+	- DoD: storage konsisten (DB), validasi request, hanya admin dapat akses.
 
 4. [P0] Authorization policies ✅
 	- Effort: M
@@ -210,11 +256,11 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 7. [P0] Attempt relasi ke approval ✅
 	- Effort: M-L
 	- Scope: simpan `test_approval_id` ke `exam_attempts` saat start.
-	- DoD: migrasi + backfill untuk data existing; relasi dipakai untuk validasi.
+	- DoD: migrasi + relasi dipakai untuk validasi.
 
 8. [P1] Audit log activity ✅
 	- Effort: M-L
-	- Scope: aktifkan `LogsActivity` di model kritikal (payment proof, approvals, sessions, attempts).
+	- Scope: aktifkan `LogsActivity` di model kritikal.
 	- DoD: event approve/reject/publish/submit tercatat dengan actor.
 
 9. [P1] HTML sanitasi konten soal ✅
@@ -227,14 +273,14 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	 - Scope: generate signed URL untuk image/audio atau proxy endpoint.
 	 - DoD: URL hanya berlaku sementara; akses tanpa token ditolak.
 
-11. [P1] Feature tests core flow
+11. [P1] Feature tests core flow ✅
 	 - Effort: L
 	 - Scope: test alur register -> approval -> session -> start -> submit -> result.
-	 - DoD: coverage minimal untuk happy path dan 2-3 negative cases penting.
+	 - DoD: coverage minimal untuk happy path dan negative cases penting.
 
 ### Ops (Deployment/Operations)
 
-1. [OPS] Lengkapi `.env.example`
+1. [OPS] Lengkapi `.env.example` ✅
 	- Effort: S
 	- DoD: semua env yang dipakai config dan service tercantum dengan nilai contoh.
 
@@ -243,26 +289,26 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Scope: auto-close session dan auto-submit attempt stale.
 	- DoD: command terjadwal dan safe-guard untuk idempotency.
 
-3. [OPS] Queue worker
+3. [OPS] Queue worker ✅
 	- Effort: M
-	- Scope: setup queue connection dan job async (mis. export results).
+	- Scope: setup queue connection dan job async (export results).
 	- DoD: job berjalan di worker, retry dan timeout terdefinisi.
 
-4. [OPS] Log rotation
+4. [OPS] Log rotation ✅
 	- Effort: M
 	- Scope: logging harian atau size-based.
 	- DoD: log tidak menumpuk; retention jelas.
 
-5. [OPS] Backup DB dan storage
+5. [OPS] Backup DB dan storage ✅
 	- Effort: L
 	- Scope: backup terjadwal untuk database dan file upload.
 	- DoD: dokumentasi restore dan lokasi backup ada.
 
 ### Enhancement (P2)
 
-1. [P2] Import bank soal
+1. [P2] Import bank soal ✅
 	- Effort: M
-	- Scope: import CSV/Excel untuk question bank + options.
+	- Scope: import CSV untuk question bank + options.
 	- DoD: validasi template dan report error per baris.
 
 2. [P2] Versioning bank/package
