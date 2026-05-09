@@ -120,12 +120,12 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Feature tests** | ❌ Kosong | Hanya `ExampleTest.php` default |
-| 2 | **Anti-double login** | ⚠️ Parsial | `user_sessions` dicatat, belum blokir multi-login |
-| 3 | **Audit log** | ⚠️ Parsial | Spatie terpasang, belum ada `LogsActivity` di model |
+| 2 | **Anti-double login** | ✅ Selesai | Token lama di-revoke, hanya 1 sesi aktif |
+| 3 | **Audit log** | ✅ Selesai | `LogsActivity` di model + endpoint activity log |
 | 4 | **Settings endpoint** | ✅ Selesai | `GET/PATCH /api/admin/settings/exam` tersedia |
-| 5 | **Session lifecycle** | ⚠️ Parsial | Enum ada `finished/cancelled`, endpoint hanya publish/close |
-| 6 | **HTML sanitasi** | ❌ Belum | `stem_html`, `option_html`, `explanation_html` |
-| 7 | **Signed URL media** | ❌ Belum | Image/audio URL |
+| 5 | **Session lifecycle** | ✅ Selesai | Endpoint finish/cancel + guard transisi |
+| 6 | **HTML sanitasi** | ✅ Selesai | HtmlSanitizer di create/update question |
+| 7 | **Signed URL media** | ✅ Selesai | Media proxy + signed URL |
 
 ### P2 - Enhancement
 | # | Fitur | Status | Catatan |
@@ -141,7 +141,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 |---|-------|--------|---------|
 | 1 | **`.env.example` lengkap** | ⚠️ Parsial | Perlu cek semua env var |
 | 2 | **Queue worker** | ❌ Belum | Untuk job async |
-| 3 | **Scheduler** | ❌ Belum | Auto-close session, auto-submit stale |
+| 3 | **Scheduler** | ✅ Selesai | Auto-close session, auto-submit stale |
 | 4 | **Log rotation** | ❌ Belum | |
 | 5 | **Backup DB dan storage** | ❌ Belum | |
 
@@ -157,11 +157,11 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 
 ### P1 - MVP Production
 - Full test coverage core flow
-- Settings endpoint
-- Anti-double login
+- Settings endpoint ✅
+- Anti-double login ✅
 - Anti-cheat threshold enforcement
-- Strong audit log
-- HTML sanitasi
+- Strong audit log ✅
+- HTML sanitasi ✅
 
 ### P2 - Enhancement
 - Import bank soal
@@ -197,12 +197,12 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Scope: buat policy untuk resource utama dan gunakan `authorize()` di controller.
 	- DoD: semua endpoint admin terlindungi policy; user hanya bisa akses resource miliknya.
 
-5. [P1] Session lifecycle (finish/cancel)
+5. [P1] Session lifecycle (finish/cancel) ✅
 	- Effort: M
 	- Scope: endpoint/status transition `finished` dan `cancelled`.
 	- DoD: aturan transisi jelas; attempt baru ditolak jika session tidak aktif.
 
-6. [P1] Anti-double login enforcement
+6. [P1] Anti-double login enforcement ✅
 	- Effort: M
 	- Scope: blokir sesi login ganda atau invalidate session lama.
 	- DoD: hanya 1 session aktif per user; audit/log tersedia saat diblokir.
@@ -212,17 +212,17 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Scope: simpan `test_approval_id` ke `exam_attempts` saat start.
 	- DoD: migrasi + backfill untuk data existing; relasi dipakai untuk validasi.
 
-8. [P1] Audit log activity
+8. [P1] Audit log activity ✅
 	- Effort: M-L
 	- Scope: aktifkan `LogsActivity` di model kritikal (payment proof, approvals, sessions, attempts).
 	- DoD: event approve/reject/publish/submit tercatat dengan actor.
 
-9. [P1] HTML sanitasi konten soal
+9. [P1] HTML sanitasi konten soal ✅
 	- Effort: M-L
 	- Scope: sanitize `stem_html`, `option_html`, `explanation_html` pada create/update.
 	- DoD: payload berbahaya dibersihkan; content valid tetap utuh.
 
-10. [P1] Signed URL media
+10. [P1] Signed URL media ✅
 	 - Effort: L
 	 - Scope: generate signed URL untuk image/audio atau proxy endpoint.
 	 - DoD: URL hanya berlaku sementara; akses tanpa token ditolak.
@@ -238,7 +238,7 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Effort: S
 	- DoD: semua env yang dipakai config dan service tercantum dengan nilai contoh.
 
-2. [OPS] Scheduler jobs
+2. [OPS] Scheduler jobs ✅
 	- Effort: M
 	- Scope: auto-close session dan auto-submit attempt stale.
 	- DoD: command terjadwal dan safe-guard untuk idempotency.
