@@ -118,8 +118,8 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | 1 | **Loading skeleton** | ✅ Selesai | Dashboard, history, exam perlu skeleton |
 | 2 | **State management** | ✅ Selesai | Menggunakan @tanstack/react-query |
 | 3 | **E2E tests** | ❌ Belum | Playwright |
-| 4 | **Responsive mobile exam** | ⚠️ Parsial | Perlu cek ulang |
-| 5 | **Accessibility** | ⚠️ Parsial | Focus state, aria, keyboard navigation |
+| 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
+| 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
 
 ---
 
