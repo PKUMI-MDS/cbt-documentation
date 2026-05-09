@@ -40,6 +40,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ `PATCH /api/admin/payment-proofs/{id}/approve`
 - ✅ `PATCH /api/admin/payment-proofs/{id}/reject`
 - ✅ Saat approve, sistem membuat `test_approval` dan aktifkan akun
+- ✅ Approve/reject hanya untuk status pending (idempotency guard 422)
 - ✅ Filter admin: status, user_id
 - ✅ Pagination metadata
 
@@ -56,6 +57,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Validasi media berdasarkan question type
 - ✅ **`difficulty_level` field** (baru - 9 Mei 2026)
 - ✅ **`audio_max_play_count` default 1** (baru - 9 Mei 2026)
+- ✅ Guard delete: blok hapus bank soal yang dipakai sesi aktif
 - ✅ Storage image/audio di disk public
 
 ### 5. Exam Package
@@ -109,23 +111,21 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ### P0 - Harus Sebelum Demo Integrasi
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Authorization Policies** | ❌ Kosong | Folder `app/Policies/` kosong |
-| 2 | **Attempt relasi ke approval** | ❌ Belum | `test_approval_id` di `exam_attempts` |
-| 3 | **Result visibility guard** | ⚠️ Parsial | Perlu cek user response |
-| 4 | **Save answer option ownership** | ⚠️ Parsial | Validasi selected_option_id |
+| 1 | **Authorization Policies** | ❌ Kosong | Folder `app/Policies` belum ada |
+| 2 | **Attempt relasi ke approval** | ❌ Belum | `exam_attempts` belum simpan `test_approval_id` (hanya via registration) |
+| 3 | **Result visibility guard** | ⚠️ Parsial | Score disembunyikan via `show_result_to_user`, tapi endpoint masih akses metadata |
+| 4 | **Save answer option ownership** | ⚠️ Parsial | `selected_option_id` belum divalidasi milik soal di attempt |
 
 ### P1 - MVP Production
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Feature tests** | ❌ Kosong | Hanya `ExampleTest.php` default |
-| 2 | **Anti-double login** | ❌ Belum | `user_sessions` tabel ada, belum dipakai |
-| 3 | **Audit log** | ⚠️ Parsial | Spatie terinstall, belum digunakan |
-| 4 | **Settings endpoint** | ❌ Belum | `GET/PATCH /api/admin/settings/exam` |
-| 5 | **Idempotency guard approve** | ❌ Belum | Payment proof approved 2x harus 422 |
-| 6 | **Session lifecycle** | ⚠️ Parsial | Belum ada `running`, `cancelled` |
-| 7 | **HTML sanitasi** | ❌ Belum | `stem_html`, `option_html`, `explanation_html` |
-| 8 | **Signed URL media** | ❌ Belum | Image/audio URL |
-| 9 | **Guard delete** | ❌ Belum | Bank soal dipakai aktif |
+| 2 | **Anti-double login** | ⚠️ Parsial | `user_sessions` dicatat, belum blokir multi-login |
+| 3 | **Audit log** | ⚠️ Parsial | Spatie terpasang, belum ada `LogsActivity` di model |
+| 4 | **Settings endpoint** | ❌ Belum | `GET/PATCH /api/admin/settings/exam` belum ada |
+| 5 | **Session lifecycle** | ⚠️ Parsial | Enum ada `finished/cancelled`, endpoint hanya publish/close |
+| 6 | **HTML sanitasi** | ❌ Belum | `stem_html`, `option_html`, `explanation_html` |
+| 7 | **Signed URL media** | ❌ Belum | Image/audio URL |
 
 ### P2 - Enhancement
 | # | Fitur | Status | Catatan |
