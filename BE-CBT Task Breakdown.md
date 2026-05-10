@@ -310,17 +310,17 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Scope: import CSV untuk question bank + options.
 	- DoD: validasi template dan report error per baris.
 
-2. [P2] Versioning bank/package
+2. [P2] Versioning bank/package ✅
 	- Effort: L
 	- Scope: simpan versi soal/paket untuk audit dan rollback.
 	- DoD: attempt menyimpan versi snapshot yang digunakan.
 
-3. [P2] Notification email/WhatsApp
+3. [P2] Notification email/WhatsApp ✅
 	- Effort: L
 	- Scope: notifikasi approval, session assigned, dan hasil.
 	- DoD: provider configurable dan bisa dimatikan.
 
-4. [P2] Advanced analytics
+4. [P2] Advanced analytics ✅
 	- Effort: L
 	- Scope: agregasi hasil per sesi/paket/section.
 	- DoD: endpoint admin + export ringkas.
