@@ -121,6 +121,12 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
 | 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
 
+### P3 - Backend Integration & Notifications
+| # | Fitur | Status | Catatan |
+|---|-------|--------|---------|
+| 1 | **Media Proxy Authentication** | ❌ Belum | Verifikasi token Sanctum untuk `<img src>` audio/image proxy |
+| 2 | **Account Status Notification** | ❌ Belum | Implementasi websocket/polling untuk update status akun |
+
 ---
 
 ## Prioritas Sprint
@@ -145,3 +151,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Richer history and profile
 - ⏸️ E2E tests (Ditunda)
 - ✅ State management layer
+
+### P3 - Backend Integration & Notifications (NEW)
+- Verifikasi keamanan URL media proxy (image/audio)
+- Real-time/polling notifikasi status akun user

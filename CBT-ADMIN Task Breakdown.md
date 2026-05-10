@@ -160,9 +160,17 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 
 ---
 
-## Yang Masih Belum / Perlu Perbaikan 🔧
+## Yang Masih Belum / Perlu Perbaikan 🔧 (Baru - Update Backend)
 
-Tidak ada task yang belum dikerjakan. Semua item dari breakdown sudah selesai.
+### P3 - New Features & Enhancements
+| # | Modul | Fitur | Status | Catatan |
+|---|-------|-------|--------|---------|
+| 1 | **Question Import** | Import Soal via CSV | ❌ Belum | Endpoint `POST /api/admin/questions/import` |
+| 2 | **Settings** | Pengaturan Ujian Global | ❌ Belum | Modul baru `/admin/settings` |
+| 3 | **Exam Session** | Aksi Finish & Cancel | ❌ Belum | Update status ujian secara paksa |
+| 4 | **Monitoring** | Activity Logs | ❌ Belum | Tabel riwayat log aksi user/admin |
+| 5 | **Monitoring** | Analytics Data | ❌ Belum | Integrasi chart dashboard/modul baru |
+| 6 | **Media Proxy** | Update URL Format | ❌ Belum | Sesuaikan `imageProxyUrl` dengan controller baru |
 
 ---
 
@@ -191,3 +199,10 @@ Tidak ada task yang belum dikerjakan. Semua item dari breakdown sudah selesai.
 - Breadcrumb navigation ✅
 - Dashboard chart ✅
 - Card view mobile ✅
+
+### P3 - New Features & Enhancements (NEW)
+- Fitur Import Soal via CSV
+- Pengaturan Ujian Global (Settings)
+- Menu Activity Logs & Analytics
+- Aksi Finish/Cancel pada Exam Session
+- Penyesuaian Media Proxy URL
