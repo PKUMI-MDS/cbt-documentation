@@ -180,7 +180,6 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | 2 | **Versioning bank/package** | ❌ Belum | |
 | 3 | **Notification email/WhatsApp** | ❌ Belum | |
 | 4 | **Advanced analytics** | ❌ Belum | |
-| 5 | **Proctoring webcam** | ❌ Belum | Jika scope berubah |
 
 ### Deployment dan Operations
 | # | Fitur | Status | Catatan |
@@ -325,8 +324,3 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 	- Effort: L
 	- Scope: agregasi hasil per sesi/paket/section.
 	- DoD: endpoint admin + export ringkas.
-
-5. [P2] Proctoring webcam
-	- Effort: XL
-	- Scope: integrasi capture dan pelaporan.
-	- DoD: jelas apakah in-scope dan definisi data yang disimpan.
