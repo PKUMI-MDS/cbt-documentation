@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend.
 
-**Last Updated:** 2026-05-10
+**Last Updated:** 2026-05-11
 
 ---
 
@@ -137,8 +137,8 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | 3 | **Disable right click/copy** | ✅ Selesai | Di area exam |
 | 4 | **Warning modal violation** | ✅ Selesai | Saat threshold terlewati |
 | 5 | **Route guard saat exam aktif** | ✅ Selesai | Cegah keluar tanpa konfirmasi |
-| 6 | **Auto-submit on violation limit** | ❌ Belum | Integrasi `auto_submit_on_violation_limit` dari global settings BE |
-| 7 | **Dynamic violation limits** | ❌ Belum | `max_tab_switch` & `max_fullscreen_exit` masih hardcode, harusnya dari BE |
+| 6 | **Auto-submit on violation limit** | ✅ Selesai (FE ready) | FE sudah integrasi `auto_submit_on_violation_limit` dengan fallback default `true`. Aktif saat limit terlampaui. Menunggu BE expose endpoint publik settings. |
+| 7 | **Dynamic violation limits** | ✅ Selesai (FE ready) | `tabSwitchCount` & `fullscreenExitCount` terpisah, tidak lagi hardcode. Limits dynamic dari settings dengan fallback default (`max_tab_switch: 3`, `max_fullscreen_exit: 3`). Menunggu BE expose endpoint publik settings. |
 
 ### P2 - Polish & Optimization
 | # | Fitur | Status | Catatan |
@@ -153,17 +153,17 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 ### P3 - Backend Integration & Settings (NEW — sinkron BE 10 Mei 2026)
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Global Exam Settings Integration** | ❌ Belum | FE harus baca settings dinamis saat start exam: `auto_submit_on_violation_limit`, `max_tab_switch`, `max_fullscreen_exit`, `shuffle_questions`, `shuffle_options`, `show_result_to_user` |
-| 2 | **Media Proxy / Signed URL** | ❌ Belum | BE sekarang pakai signed URL untuk media. FE harus pakai `image_url`/`audio_url` dari response API, bukan hardcode path |
+| 1 | **Global Exam Settings Integration** | ⚠️ Partial (FE ready) | FE sudah baca settings dinamis saat start exam (`getExamSettings()` + `ExamSettings` type + fallback default). Menunggu BE expose endpoint publik `/settings/exam` untuk peserta. |
+| 2 | **Media Proxy / Signed URL** | ✅ Selesai | FE sudah pakai `image_url`/`audio_url` dari response API. Ditambah `onError` handler di img tag untuk handle signed URL expired/invalid. |
 | 3 | **Account Status Notification** | ❌ Belum | Implementasi websocket/polling global untuk update status akun (bukan cuma di waiting-approval) |
-| 4 | **Show Result to User enforcement** | ⚠️ Partial | FE sudah ada logic tapi perlu ensure respect global setting dari admin |
+| 4 | **Show Result to User enforcement** | ✅ Selesai | History, Dashboard, dan Completed page sekarang fully respect `show_result_to_user` dari `ExamSession` / `AttemptResult`. |
 
 ### P4 - Missing Features / Placeholder
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Forgot Password** | ⚠️ Placeholder | Page ada tapi hanya static info. BE belum sediakan endpoint reset password |
 | 2 | **Edit Profile** | ❌ Belum | Belum ada page & endpoint `PATCH /my/profile` |
-| 3 | **Exam Type di Register** | ❌ Belum | Field `exam_type` ada di UI tapi tidak masuk payload API (`RegisterPayload` tidak punya field ini) |
+| 3 | **Exam Type di Register** | ✅ Selesai | Field `exam_type` sudah masuk ke `RegisterPayload` dan dikirim ke API saat submit form register. |
 
 ---
 
@@ -173,18 +173,17 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - **Image upload limit** 5MB → 2MB (sesuai BE `max:2048`)
 - **Score detail fetch** refactor dari fetch all + client-side filter ke dedicated endpoint `GET /exam-attempts/{id}/result`
 - Query param history → score berubah dari `result_id` ke `attempt_id`
+- **Exam Type di Register** — `RegisterPayload` ditambah `exam_type`, form register sekarang mengirim field ini ke BE
+- **Dynamic Violation Limits & Auto-submit** — `ExamSettings` type + `getExamSettings()` API wrapper. Exam page refactor: `tabSwitchCount` & `fullscreenExitCount` terpisah, auto-submit saat limit terlampaui, modal text dynamic
+- **Show Result Enforcement** — History page & DashboardContent sekarang cek `exam_session?.show_result_to_user` sebelum tampilkan skor/tombol detail
+- **Media Proxy / Signed URL** — `onError` handler di img tag exam page untuk handle expired signed URL
 
 ### 📋 Next Tasks (Rekomendasi Urutan Pengerjaan)
-1. **Global Exam Settings Integration** (P3 #1) — paling urgent karena BE admin sudah bisa atur
-2. **Media Proxy / Signed URL** (P3 #2) — security fix
-3. **Auto-submit on violation limit** (P1 #6) — terkait dengan #1
-4. **Dynamic violation limits** (P1 #7) — terkait dengan #1
-5. **Exam Type di Register** (P4 #3) — quick fix
-6. **Show Result to User enforcement** (P3 #4) — polish
-7. **Edit Profile** (P4 #2) — butuh BE support dulu
-8. **Forgot Password** (P4 #1) — butuh BE support dulu
-9. **Account Status Notification** (P3 #3) — nice to have
-10. **E2E tests execution** (P2 #3) — bisa parallel
+1. **BE: Expose Global Exam Settings ke Peserta** — FE sudah 100% siap (`getExamSettings()` + dynamic limits + auto-submit). BE perlu buat endpoint publik (non-admin) yang return settings agar FE bisa pakai nilai real dari admin.
+2. **Edit Profile** (P4 #2) — butuh BE endpoint `PATCH /my/profile` + page/form di FE
+3. **Forgot Password** (P4 #1) — butuh BE endpoint reset password
+4. **Account Status Notification** (P3 #3) — nice to have, websocket/polling global
+5. **E2E tests execution** (P2 #3) — bisa parallel
 
 ---
 
@@ -199,13 +198,13 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Start/resume exam
 - ✅ Get question/save answer/submit
 
-### P1 - Exam Reliability ✅ DONE (core)
+### P1 - Exam Reliability ✅ DONE
 - ✅ Fullscreen + tab switch detection
 - ✅ Violation logging client events
 - ✅ Result visibility
 - ✅ Loading skeleton
-- ❌ Auto-submit on violation limit (butuh global settings)
-- ❌ Dynamic max tab/fullscreen limit (butuh global settings)
+- ✅ Auto-submit on violation limit (FE ready, fallback default aktif)
+- ✅ Dynamic max tab/fullscreen limit (FE ready, fallback default)
 
 ### P2 - Polish
 - ✅ Better UX for retake
@@ -214,13 +213,13 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Responsive & accessibility
 - ⏸️ E2E tests execution & refinement (Ditunda)
 
-### P3 - Backend Integration & Settings (ACTIVE)
-- ❌ Global exam settings integration (`auto_submit`, `max_tab_switch`, `max_fullscreen_exit`, `shuffle`, `show_result`)
-- ❌ Media proxy signed URL authentication
+### P3 - Backend Integration & Settings
+- ⚠️ Global exam settings integration (FE ready, menunggu BE expose endpoint publik)
+- ✅ Media proxy signed URL authentication
 - ❌ Real-time/polling notifikasi status akun global
-- ⚠️ Show result enforcement
+- ✅ Show result enforcement
 
 ### P4 - Missing Features / Nice to Have
 - ⚠️ Forgot password (menunggu BE)
 - ❌ Edit profile (menunggu BE)
-- ❌ Connect exam_type saat register
+- ✅ Connect exam_type saat register
