@@ -159,6 +159,13 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **React 19 Server Components** — Memperbarui pemanggilan komponen `AdminSectionPage` menjadi format JSX `<AdminSectionPage params={...} />` agar sesuai dengan konvensi Server Component di React 19.
 - ✅ **Question Media URL Fix** — Menghapus prefix `questions/` dari `imageProxyUrl` dan `audioProxyUrl` di `admin-api.ts` agar tidak terjadi duplikasi *path* yang menyebabkan error 404 saat memuat gambar/audio soal melalui `MediaController`.
 
+### 18. New Features (Sprint P3)
+- ✅ **Question Import** — Fitur Bulk Import soal via CSV dengan download template.
+- ✅ **Global Exam Settings** — Modul pengaturan default ujian (durasi, tab switch, shuffle, show result) di `/admin/settings`.
+- ✅ **Exam Session Management** — Tambahan aksi *Finish* dan *Cancel* untuk manajemen paksa siklus ujian.
+- ✅ **Activity Logs** — Halaman pantauan log aktivitas admin dan peserta.
+- ✅ **Analytics Dashboard** — Visualisasi performa tes per sesi, paket, atau section.
+
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧 (Baru - Update Backend)
@@ -166,12 +173,12 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 ### P3 - New Features & Enhancements
 | # | Modul | Fitur | Status | Catatan |
 |---|-------|-------|--------|---------|
-| 1 | **Question Import** | Import Soal via CSV | ❌ Belum | Endpoint `POST /api/admin/questions/import` |
-| 2 | **Settings** | Pengaturan Ujian Global | ❌ Belum | Modul baru `/admin/settings` |
-| 3 | **Exam Session** | Aksi Finish & Cancel | ❌ Belum | Update status ujian secara paksa |
-| 4 | **Monitoring** | Activity Logs | ❌ Belum | Tabel riwayat log aksi user/admin |
+| 1 | **Question Import** | Import Soal via CSV | ✅ Selesai | Endpoint `POST /api/admin/questions/import` & UI import |
+| 2 | **Settings** | Pengaturan Ujian Global | ✅ Selesai | Modul baru `/admin/settings` dengan Form Konfigurasi |
+| 3 | **Exam Session** | Aksi Finish & Cancel | ✅ Selesai | Update status ujian secara paksa via action |
+| 4 | **Monitoring** | Activity Logs | ✅ Selesai | Tabel riwayat log aksi user/admin |
 | 5 | **Monitoring** | Analytics Data | ✅ Selesai | UI chart & table, unpack Laravel ResponseFormatter (`route.ts`) |
-| 6 | **Media Proxy** | Update URL Format | ❌ Belum | Sesuaikan `imageProxyUrl` dengan controller baru |
+| 6 | **Media Proxy** | Update URL Format | ✅ Selesai | Sesuaikan `imageProxyUrl` dengan controller baru |
 
 ---
 
@@ -201,9 +208,10 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - Dashboard chart ✅
 - Card view mobile ✅
 
-### P3 - New Features & Enhancements (NEW)
-- Fitur Import Soal via CSV
-- Pengaturan Ujian Global (Settings)
-- Menu Activity Logs
-- Aksi Finish/Cancel pada Exam Session
-- Penyesuaian Media Proxy URL
+### P3 - New Features & Enhancements ✅ DONE
+- Fitur Import Soal via CSV ✅
+- Pengaturan Ujian Global (Settings) ✅
+- Menu Activity Logs ✅
+- Analytics Dashboard ✅
+- Aksi Finish/Cancel pada Exam Session ✅
+- Penyesuaian Media Proxy URL ✅
