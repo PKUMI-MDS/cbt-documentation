@@ -171,15 +171,15 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | 5 | **Session lifecycle** | ✅ Selesai | Endpoint finish/cancel + guard transisi |
 | 6 | **HTML sanitasi** | ✅ Selesai | HtmlSanitizer di create/update question |
 | 7 | **Signed URL media** | ✅ Selesai | Media proxy + signed URL validation |
-| 8 | **Anti-cheat threshold enforcement** | ⚠️ Parsial | Violation dilog tapi belum ada auto-action saat threshold tercapai |
+| 8 | **Anti-cheat threshold enforcement** | ✅ Selesai | Auto-submit saat tab_switch/fullscreen_exit melebihi threshold; bisa dimatikan via setting |
 
 ### P2 - Enhancement
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Import bank soal** | ✅ Selesai | CSV import + template download |
-| 2 | **Versioning bank/package** | ❌ Belum | |
-| 3 | **Notification email/WhatsApp** | ❌ Belum | |
-| 4 | **Advanced analytics** | ❌ Belum | |
+| 2 | **Versioning bank/package** | ✅ Selesai | Auto-increment version saat update; package_version & bank_versions_json tersimpan di attempt |
+| 3 | **Notification email/WhatsApp** | ✅ Selesai | Email notifikasi: approval, rejection, session assigned, result published. Bisa dimatikan via config. |
+| 4 | **Advanced analytics** | ✅ Selesai | Endpoint `/api/admin/analytics` dengan group_by session/package/section |
 
 ### Deployment dan Operations
 | # | Fitur | Status | Catatan |
@@ -204,15 +204,15 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - Full test coverage core flow ✅
 - Settings endpoint ✅
 - Anti-double login ✅
-- Anti-cheat threshold enforcement ⚠️ (violation logged, auto-action pending)
+- Anti-cheat threshold enforcement ✅ (auto-submit saat threshold tercapai, bisa dimatikan via setting)
 - Strong audit log ✅
 - HTML sanitasi ✅
 
 ### P2 - Enhancement
 - Import bank soal ✅
-- Versioning bank/package
-- Advanced analytics
-- Notification email/WhatsApp
+- Versioning bank/package ✅
+- Advanced analytics ✅
+- Notification email/WhatsApp ✅
 
 ---
 
