@@ -122,6 +122,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Export Excel/CSV via route handler
 - ✅ **Export dengan session_id filter**
 - ✅ **Custom detail page** dengan score visualization
+- ✅ **Analytics Dashboard** — Visualisasi skor rata-rata per sesi, paket, dan section beserta fix struktur paginasi API (`route.ts`).
 
 ### 14. Forms, Mutations, dan Revalidation
 - ✅ Server actions untuk semua modul
@@ -169,7 +170,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | 2 | **Settings** | Pengaturan Ujian Global | ❌ Belum | Modul baru `/admin/settings` |
 | 3 | **Exam Session** | Aksi Finish & Cancel | ❌ Belum | Update status ujian secara paksa |
 | 4 | **Monitoring** | Activity Logs | ❌ Belum | Tabel riwayat log aksi user/admin |
-| 5 | **Monitoring** | Analytics Data | ❌ Belum | Integrasi chart dashboard/modul baru |
+| 5 | **Monitoring** | Analytics Data | ✅ Selesai | UI chart & table, unpack Laravel ResponseFormatter (`route.ts`) |
 | 6 | **Media Proxy** | Update URL Format | ❌ Belum | Sesuaikan `imageProxyUrl` dengan controller baru |
 
 ---
@@ -203,6 +204,6 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 ### P3 - New Features & Enhancements (NEW)
 - Fitur Import Soal via CSV
 - Pengaturan Ujian Global (Settings)
-- Menu Activity Logs & Analytics
+- Menu Activity Logs
 - Aksi Finish/Cancel pada Exam Session
 - Penyesuaian Media Proxy URL
