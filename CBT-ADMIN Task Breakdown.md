@@ -156,6 +156,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 ### 17. Bug Fixes & Improvements
 - ✅ **Route Shadowing Fix** — Menambahkan `page.tsx` secara eksplisit pada setiap folder modul di `src/app/admin/*` untuk mencegah Next.js static folder shadowing terhadap *dynamic route* `[section]`.
 - ✅ **React 19 Server Components** — Memperbarui pemanggilan komponen `AdminSectionPage` menjadi format JSX `<AdminSectionPage params={...} />` agar sesuai dengan konvensi Server Component di React 19.
+- ✅ **Question Media URL Fix** — Menghapus prefix `questions/` dari `imageProxyUrl` dan `audioProxyUrl` di `admin-api.ts` agar tidak terjadi duplikasi *path* yang menyebabkan error 404 saat memuat gambar/audio soal melalui `MediaController`.
 
 ---
 
