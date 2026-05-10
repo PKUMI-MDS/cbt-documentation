@@ -153,6 +153,10 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **Skeleton loading** — Dashboard + module page
 - ✅ **Responsive table mobile** — table di desktop, card view di mobile
 
+### 17. Bug Fixes & Improvements
+- ✅ **Route Shadowing Fix** — Menambahkan `page.tsx` secara eksplisit pada setiap folder modul di `src/app/admin/*` untuk mencegah Next.js static folder shadowing terhadap *dynamic route* `[section]`.
+- ✅ **React 19 Server Components** — Memperbarui pemanggilan komponen `AdminSectionPage` menjadi format JSX `<AdminSectionPage params={...} />` agar sesuai dengan konvensi Server Component di React 19.
+
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
