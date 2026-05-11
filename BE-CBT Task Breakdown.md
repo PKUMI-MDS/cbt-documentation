@@ -381,3 +381,20 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 	- Effort: L
 	- Scope: agregasi hasil per sesi/paket/section.
 	- DoD: endpoint admin + export ringkas.
+
+### Client Feedback Refinement (P3)
+
+1. [P3] Update Validasi Register & Payment ❌
+	- Effort: S
+	- Scope: Update `RegisterRequest.php` untuk HP min 11, max 13. Hapus wajib `amount` & `payment_date` di `StorePaymentProofRequest.php`.
+	- DoD: Form FE bisa disederhanakan dan tetap lolos validasi BE.
+
+2. [P3] Bypass Sistem Section ❌
+	- Effort: S
+	- Scope: Update `StoreQuestionRequest.php` dan `StoreExamPackageRequest.php` agar memaksa/menyisipkan nilai default `general` ke `section_type`.
+	- DoD: UI Admin bisa menghapus dropdown Section tanpa mengubah skema tabel database.
+
+3. [P3] Fitur Bulk Create Soal ❌
+	- Effort: M
+	- Scope: Buat endpoint baru `POST /api/admin/questions/bulk-create` yang menerima payload JSON array soal.
+	- DoD: Bisa menyimpan banyak soal sekaligus dengan efisien untuk UI bergaya Google Forms.

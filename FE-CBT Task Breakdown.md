@@ -165,6 +165,12 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | 2 | **Edit Profile** | ❌ Belum | Belum ada page & endpoint `PATCH /my/profile` |
 | 3 | **Exam Type di Register** | ✅ Selesai | Field `exam_type` sudah masuk ke `RegisterPayload` dan dikirim ke API saat submit form register. |
 
+### P5 - Client Feedback Refinement
+| # | Fitur | Status | Catatan |
+|---|-------|--------|---------|
+| 1 | **Validasi No. WhatsApp** | ❌ Belum | Tambahkan validasi min:11 dan max:13 digit pada `RegisterForm.tsx` |
+| 2 | **Sederhanakan Upload Bukti Bayar** | ❌ Belum | Hapus field `nominal` dan `tanggal bayar` dari `PaymentProofForm.tsx`, hanya sisakan file upload |
+
 ---
 
 ## Perubahan Terbaru (10 Mei 2026)

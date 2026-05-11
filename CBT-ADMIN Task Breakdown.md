@@ -207,3 +207,10 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - Analytics Dashboard ✅
 - Aksi Finish/Cancel pada Exam Session ✅
 - Penyesuaian Media Proxy URL ✅
+
+### P4 - Client Feedback Refinement ❌
+- **Hapus Section & Difficulty (Buat Soal):** Menghilangkan field "Section" dan "Difficulty" di halaman `question-form.tsx`. ❌
+- **Hapus Section (Exam Package):** Menghilangkan kolom "Section" di halaman `bank-mapping-editor.tsx`. ❌
+- **Perbaikan Input Jumlah Soal:** Memperbaiki bug pada input "Jumlah" di Exam Package agar bisa diketik dan dihapus dengan leluasa. ❌
+- **Fix Download Template Import:** Mengubah tombol Download Template agar *generate* CSV langsung di frontend (mengatasi error 401). ❌
+- **[FITUR BARU] UI Buat Soal Massal:** Membuat halaman baru (`/admin/questions/batch`) dengan gaya *Google Forms* (berbasis kartu). Form ini hanya akan berisi *Pertanyaan* dan *Opsi A-D* (tanpa Section/Difficulty). ❌
