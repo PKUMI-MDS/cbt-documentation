@@ -168,8 +168,8 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 ### P5 - Client Feedback Refinement
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Validasi No. WhatsApp** | ❌ Belum | Tambahkan validasi min:11 dan max:13 digit pada `RegisterForm.tsx` |
-| 2 | **Sederhanakan Upload Bukti Bayar** | ❌ Belum | Hapus field `nominal` dan `tanggal bayar` dari `PaymentProofForm.tsx`, hanya sisakan file upload |
+| 1 | **Validasi No. WhatsApp** | ✅ Selesai | Tambahkan validasi min:11 dan max:13 digit pada `RegisterForm.tsx` |
+| 2 | **Sederhanakan Upload Bukti Bayar** | ✅ Selesai | Hapus field `nominal` dan `tanggal bayar` dari `PaymentProofForm.tsx`, hanya sisakan file upload |
 
 ---
 
@@ -210,7 +210,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Auto-submit on violation limit (FE ready, fallback default aktif)
 - ✅ Dynamic max tab/fullscreen limit (FE ready, fallback default)
 
-### P2 - Polish
+### P2 - Polish ✅ DONE
 - ✅ Better UX for retake
 - ✅ Richer history and profile
 - ✅ State management layer
@@ -227,3 +227,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ⚠️ Forgot password (menunggu BE)
 - ❌ Edit profile (menunggu BE)
 - ✅ Connect exam_type saat register
+
+### P5 - Client Feedback Refinement ✅ DONE
+- ✅ Validasi No. WhatsApp
+- ✅ Sederhanakan Upload Bukti Bayar
