@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan kondisi repo saat ini dan API admin backend.
 
-**Last Updated:** 2026-05-09
+**Last Updated:** 2026-05-11
 
 ---
 
@@ -168,17 +168,9 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 
 ---
 
-## Yang Masih Belum / Perlu Perbaikan 🔧 (Baru - Update Backend)
+## Yang Masih Belum / Perlu Perbaikan 🔧
 
-### P3 - New Features & Enhancements
-| # | Modul | Fitur | Status | Catatan |
-|---|-------|-------|--------|---------|
-| 1 | **Question Import** | Import Soal via CSV | ✅ Selesai | Endpoint `POST /api/admin/questions/import` & UI import |
-| 2 | **Settings** | Pengaturan Ujian Global | ✅ Selesai | Modul baru `/admin/settings` dengan Form Konfigurasi |
-| 3 | **Exam Session** | Aksi Finish & Cancel | ✅ Selesai | Update status ujian secara paksa via action |
-| 4 | **Monitoring** | Activity Logs | ✅ Selesai | Tabel riwayat log aksi user/admin |
-| 5 | **Monitoring** | Analytics Data | ✅ Selesai | UI chart & table, unpack Laravel ResponseFormatter (`route.ts`) |
-| 6 | **Media Proxy** | Update URL Format | ✅ Selesai | Sesuaikan `imageProxyUrl` dengan controller baru |
+- 🎉 **Semua task untuk sprint P0 - P3 telah diselesaikan!** Tidak ada backlog atau task yang tertunda saat ini. Semua pembaruan dari Backend sudah terintegrasi penuh.
 
 ---
 
