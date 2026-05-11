@@ -438,7 +438,7 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 
 ### Client Feedback Refinement (P3)
 
-1. [P3] Fitur Bulk Create Soal ❌
+1. [P3] Fitur Bulk Create Soal ✅
 	- Effort: M
-	- Scope: Buat endpoint baru `POST /api/admin/questions/bulk-create` yang menerima payload JSON array soal.
-	- DoD: Bisa menyimpan banyak soal sekaligus dengan efisien untuk UI bergaya Google Forms.
+	- Scope: Endpoint `POST /api/admin/questions/bulk` menerima `multipart/form-data` array soal (teks, gambar, audio). Section di-bypass dengan nilai `general`.
+	- DoD: Bisa menyimpan banyak soal sekaligus dengan efisien untuk UI bergaya Google Forms di CBT-Admin.
