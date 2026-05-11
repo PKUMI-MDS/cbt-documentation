@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend.
 
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-11 (update 2)
 
 ---
 
@@ -145,7 +145,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 |---|-------|--------|---------|
 | 1 | **Loading skeleton** | ✅ Selesai | Dashboard, history, exam, profile |
 | 2 | **State management** | ✅ Selesai | Menggunakan @tanstack/react-query |
-| 3 | **E2E tests execution** | ⏸️ Ditunda | File lengkap, perlu validasi & refinement |
+| 3 | **E2E tests execution** | ✅ Selesai | Semua spec di-refine: helpers.ts baru, auth/login/protected-routes/dashboard/exam spec diperbarui. playwright.config.ts diupdate dengan timeout, screenshot, video on failure. Script `test:e2e:ui`, `test:e2e:headed`, `test:e2e:report` ditambahkan di package.json |
 | 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
 | 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
 | 6 | **Score detail fetch** | ✅ Selesai | Refactor ke `getAttemptResult()` dedicated endpoint |
@@ -155,7 +155,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 |---|-------|--------|---------|
 | 1 | **Global Exam Settings Integration** | ⚠️ Partial (FE ready) | FE sudah baca settings dinamis saat start exam (`getExamSettings()` + `ExamSettings` type + fallback default). Menunggu BE expose endpoint publik `/settings/exam` untuk peserta. |
 | 2 | **Media Proxy / Signed URL** | ✅ Selesai | FE sudah pakai `image_url`/`audio_url` dari response API. Ditambah `onError` handler di img tag untuk handle signed URL expired/invalid. |
-| 3 | **Account Status Notification** | ❌ Belum | Implementasi websocket/polling global untuk update status akun (bukan cuma di waiting-approval) |
+| 3 | **Account Status Notification** | ✅ Selesai | `AccountStatusWatcher` component di-mount di root layout. Polling `GET /api/me` setiap 30 detik. Deteksi perubahan status (pending→active/rejected/suspended). Banner notifikasi floating + auto-redirect countdown 5 detik ke dashboard. Tidak polling saat di halaman `/exam`. |
 | 4 | **Show Result to User enforcement** | ✅ Selesai | History, Dashboard, dan Completed page sekarang fully respect `show_result_to_user` dari `ExamSession` / `AttemptResult`. |
 
 ### P4 - Missing Features / Placeholder
@@ -179,11 +179,9 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - **Media Proxy / Signed URL** — `onError` handler di img tag exam page untuk handle expired signed URL
 
 ### 📋 Next Tasks (Rekomendasi Urutan Pengerjaan)
-1. **BE: Expose Global Exam Settings ke Peserta** — FE sudah 100% siap (`getExamSettings()` + dynamic limits + auto-submit). BE perlu buat endpoint publik (non-admin) yang return settings agar FE bisa pakai nilai real dari admin.
+1. **BE: Expose Global Exam Settings ke Peserta** — FE sudah 100% siap. BE perlu buat endpoint publik agar FE bisa pakai nilai real dari admin.
 2. **Edit Profile** (P4 #2) — butuh BE endpoint `PATCH /my/profile` + page/form di FE
 3. **Forgot Password** (P4 #1) — butuh BE endpoint reset password
-4. **Account Status Notification** (P3 #3) — nice to have, websocket/polling global
-5. **E2E tests execution** (P2 #3) — bisa parallel
 
 ---
 
@@ -211,12 +209,12 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Richer history and profile
 - ✅ State management layer
 - ✅ Responsive & accessibility
-- ⏸️ E2E tests execution & refinement (Ditunda)
+- ✅ E2E tests execution & refinement (Selesai — semua spec di-refine, config diupdate)
 
 ### P3 - Backend Integration & Settings
 - ⚠️ Global exam settings integration (FE ready, menunggu BE expose endpoint publik)
 - ✅ Media proxy signed URL authentication
-- ❌ Real-time/polling notifikasi status akun global
+- ✅ Real-time/polling notifikasi status akun global (AccountStatusWatcher)
 - ✅ Show result enforcement
 
 ### P4 - Missing Features / Nice to Have
