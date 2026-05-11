@@ -6,6 +6,20 @@ Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo
 
 ---
 
+## Perubahan Terbaru (2026-05-11)
+
+### Schema & Field Changes
+- ✅ Removed `question_type` dan `difficulty_level` dari `questions` table (migrations + code cleanup)
+- ✅ Removed `amount` dan `payment_date` dari `payment_proofs` table (migrations + code cleanup)
+- ✅ Migration files untuk drop column tersedia untuk production rollout
+
+### New Features
+- ✅ Auto-generate `code` untuk QuestionBank (prefix `QB-`), ExamPackage (`PKG-`), ExamSession (`SES-`) — generated saat create jika kosong
+- ✅ Phone number validation: digits only, 11-13 characters (di `RegisterRequest` dan nullable)
+- ✅ `registrations:mark-absent` command — auto-mark registrations absent jika session finished dan no attempt (scheduled setiap 5 menit)
+
+---
+
 ## Ringkasan Status
 
 Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
@@ -16,11 +30,14 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | **Database** | ✅ 24 migrations, 20 models, relasi lengkap |
 | **API Endpoints** | ✅ ~47 endpoint (admin + user) |
 | **Exam Engine** | ✅ Snapshot, randomisasi, timer, scoring |
-| **Payment Proof** | ✅ Upload, approve, reject + preview endpoint |
-| **Question API** | ✅ CRUD + validasi + bank sync |
+| **Payment Proof** | ✅ Upload, approve, reject + preview endpoint (schema cleaned: removed amount, payment_date) |
+| **Question API** | ✅ CRUD + validasi + bank sync (schema cleaned: removed question_type, difficulty_level) |
+| **Question Import** | ✅ CSV import + template download (updated for new schema) |
 | **Session Validation** | ✅ `date_format:H:i` untuk time |
-| **Question Import** | ✅ CSV import + template download |
 | **Feature Tests** | ✅ 21 test cases (Auth, Payment, Question Bank, User Management) |
+| **Auto-generate Code** | ✅ QB/PKG/SES codes auto-generated if not provided |
+| **Registrations Absent** | ✅ Scheduled command marks registrations absent when session finished |
+| **Phone Validation** | ✅ Digits only, 11-13 chars |
 | **Queue Worker** | ✅ ExportResultsJob + jobs table + dokumentasi |
 | **Log Rotation** | ✅ daily channel + PowerShell script + dokumentasi |
 | **Backup** | ✅ PowerShell + Bash scripts + dokumentasi |
@@ -49,8 +66,8 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Saat approve, sistem membuat `test_approval` dan aktifkan akun
 - ✅ Approve/reject hanya untuk status pending (idempotency guard 422)
 - ✅ Filter admin: status, user_id
-- ✅ Pagination metadata
-
+- ✅ Pagination metadata- ✅ **Phone validation**: digits only, 11-13 characters (Register form)
+- ✅ **Schema Cleanup**: Removed `amount` dan `payment_date` fields (redundant for proof upload)
 ### 3. Test Approval
 - ✅ `GET /api/admin/test-approvals`
 - ✅ `GET /api/admin/test-approvals/{id}`
@@ -61,13 +78,12 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ CRUD question bank
 - ✅ CRUD question dengan multipart
 - ✅ Validasi options (minimal 2, exactly 1 correct)
-- ✅ Validasi media berdasarkan question type
-- ✅ `difficulty_level` field
-- ✅ `audio_max_play_count` default 1
+- ✅ Audio play count default 1
 - ✅ Guard delete: blok hapus bank soal yang dipakai sesi aktif
 - ✅ Storage image/audio di disk public
 - ✅ **Import soal dari CSV** (`POST /api/admin/questions/import`)
 - ✅ **Download template CSV** (`GET /api/admin/questions/import/template`)
+- ✅ **Schema Cleanup**: Removed `question_type` dan `difficulty_level` fields (no longer used for question differentiation)
 
 ### 5. Exam Package
 - ✅ CRUD package
@@ -128,6 +144,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ### 13. Scheduler
 - ✅ `sessions:auto-close` — auto-close session yang lewat end_time (setiap 5 menit)
 - ✅ `attempts:auto-submit-stale` — auto-submit attempt timeout (setiap 5 menit)
+- ✅ `registrations:mark-absent` — mark registrations absent when session finished and no attempt (setiap 5 menit)
 
 ### 14. API Response dan Documentation
 - ✅ Standard response format
@@ -148,6 +165,13 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Jobs table migration tersedia
 - ✅ Log rotation: daily channel + PowerShell script
 - ✅ Backup: PowerShell + Bash scripts dengan retention
+
+### 17. Auto-Generated Features
+- ✅ Auto-generate `code` untuk QuestionBank (prefix `QB-` + 6 random chars)
+- ✅ Auto-generate `code` untuk ExamPackage (prefix `PKG-` + 6 random chars)
+- ✅ Auto-generate `code` untuk ExamSession (prefix `SES-` + 6 random chars)
+- ✅ Model boot logic tetap membolehkan override manual saat create
+
 
 ---
 
@@ -186,9 +210,10 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 |---|-------|--------|---------|
 | 1 | **`.env.example` lengkap** | ✅ Selesai | Semua env var tercantum |
 | 2 | **Queue worker** | ✅ Selesai | `ExportResultsJob` + dokumentasi |
-| 3 | **Scheduler** | ✅ Selesai | Auto-close session, auto-submit stale |
+| 3 | **Scheduler** | ✅ Selesai | Auto-close session, auto-submit stale, mark absent |
 | 4 | **Log rotation** | ✅ Selesai | daily channel + PowerShell script |
 | 5 | **Backup DB dan storage** | ✅ Selesai | PowerShell + Bash scripts |
+| 6 | **Schema cleanup migrations** | ✅ Selesai | Drop question_type/difficulty_level, drop amount/payment_date |
 
 ---
 
@@ -381,6 +406,35 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 	- Effort: L
 	- Scope: agregasi hasil per sesi/paket/section.
 	- DoD: endpoint admin + export ringkas.
+
+### Infrastructure & UX Enhancement (P2)
+
+1. [P2] Auto-generate code untuk resource ✅
+	- Effort: S-M
+	- Scope: QB/PKG/SES codes otomatis (prefix + random chars).
+	- DoD: FE tidak perlu generate code; admin bisa override manual.
+
+2. [P2] Phone validation ✅
+	- Effort: S
+	- Scope: digits only, 11-13 chars untuk Register form.
+	- DoD: validasi di backend enforce consistent format.
+
+3. [P2] Mark absent registrations ✅
+	- Effort: M
+	- Scope: scheduled job `registrations:mark-absent` saat session finished.
+	- DoD: registrasi tanpa attempt otomatis marked absent; safe guard untuk idempotency.
+
+### Schema Cleanup (P1)
+
+1. [P1] Remove question_type & difficulty_level ✅
+	- Effort: M
+	- Scope: hapus field tidak dipakai; migration untuk production.
+	- DoD: code di-refactor, import/create updated, test di-update.
+
+2. [P1] Remove payment_date & amount dari proof ✅
+	- Effort: M
+	- Scope: hapus field redundant; migration untuk production.
+	- DoD: controller/model/resource di-cleanup, tidak ada referensi sisa.
 
 ### Client Feedback Refinement (P3)
 
