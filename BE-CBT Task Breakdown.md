@@ -222,6 +222,8 @@ Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag pr
 
 ### Exam Setting Integration (P1)
 
+Status: implementasi inti sudah selesai, tetapi test coverage khusus create package/session masih pending.
+
 Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam package dan exam session, lalu tetap membolehkan admin mengubah nilainya sebelum submit. Source of truth final tetap berada di tabel package/session, bukan di settings.
 
 #### Field mapping yang paling relevan
@@ -238,31 +240,31 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 
 #### Urutan pengerjaan BE-CBT dari termudah ke tersulit
 
-1. [P1] Buat helper/resolver untuk membaca exam settings yang sudah ter-cast dan siap dipakai ulang.
+1. [P1] Buat helper/resolver untuk membaca exam settings yang sudah ter-cast dan siap dipakai ulang. ✅
 
 	- Effort: S
 	- Scope: satu pintu baca default exam setting dari tabel `settings`.
 	- DoD: helper mengembalikan nilai default yang konsisten untuk package dan session.
 
-2. [P1] Terapkan default exam setting saat create exam package.
+2. [P1] Terapkan default exam setting saat create exam package. ✅
 
 	- Effort: S-M
 	- Scope: isi nilai awal `duration_minutes`, `shuffle_questions`, `shuffle_options`, `max_tab_switch`, `max_fullscreen_exit`.
 	- DoD: jika FE tidak mengirim field tertentu, BE tetap mengisi nilai default.
 
-3. [P1] Terapkan default exam setting saat create exam session.
+3. [P1] Terapkan default exam setting saat create exam session. ✅
 
 	- Effort: S-M
 	- Scope: isi nilai awal `duration_minutes`, `show_result_to_user`, `auto_generate_enabled`.
 	- DoD: session tetap bisa dibuat walau FE hanya mengirim field minimum, selama default tersedia.
 
-4. [P1] Pastikan override manual selalu menang atas default.
+4. [P1] Pastikan override manual selalu menang atas default. ✅
 
 	- Effort: S
 	- Scope: nilai dari request final tidak boleh ditimpa default.
 	- DoD: admin bisa mengubah semua nilai awal sebelum submit.
 
-5. [P1] Tambahkan test untuk create package dan session.
+5. [P1] Tambahkan test untuk create package dan session. TODO
 
 	- Effort: M
 	- Scope: test fallback default, test override manual, test field mapping.
