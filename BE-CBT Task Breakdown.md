@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo saat ini, dokumen existing di `cbt-documentation`, dan kontrak API yang sudah muncul di `be-cbt/API_DOCUMENTATION.md`.
 
-**Last Updated:** 2026-05-09
+**Last Updated:** 2026-05-11
 
 ---
 
@@ -219,6 +219,61 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ## Urutan Pengerjaan (Termudah -> Tersulit)
 
 Catatan: urutan ini berbasis effort implementasi, bukan prioritas bisnis. Tag prioritas tetap [P0]/[P1]/[P2]/[OPS].
+
+### Exam Setting Integration (P1)
+
+Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam package dan exam session, lalu tetap membolehkan admin mengubah nilainya sebelum submit. Source of truth final tetap berada di tabel package/session, bukan di settings.
+
+#### Field mapping yang paling relevan
+| Area | Field dari exam setting | Target pemakaian |
+|------|--------------------------|------------------|
+| Package | `default_duration_minutes` | `duration_minutes` |
+| Package | `default_shuffle_questions` | `shuffle_questions` |
+| Package | `default_shuffle_options` | `shuffle_options` |
+| Package | `default_max_tab_switch` | `max_tab_switch` |
+| Package | `default_max_fullscreen_exit` | `max_fullscreen_exit` |
+| Session | `default_duration_minutes` | `duration_minutes` |
+| Session | `default_show_result_to_user` | `show_result_to_user` |
+| Session | `default_auto_generate_enabled` | `auto_generate_enabled` |
+
+#### Urutan pengerjaan BE-CBT dari termudah ke tersulit
+
+1. [P1] Buat helper/resolver untuk membaca exam settings yang sudah ter-cast dan siap dipakai ulang.
+
+	- Effort: S
+	- Scope: satu pintu baca default exam setting dari tabel `settings`.
+	- DoD: helper mengembalikan nilai default yang konsisten untuk package dan session.
+
+2. [P1] Terapkan default exam setting saat create exam package.
+
+	- Effort: S-M
+	- Scope: isi nilai awal `duration_minutes`, `shuffle_questions`, `shuffle_options`, `max_tab_switch`, `max_fullscreen_exit`.
+	- DoD: jika FE tidak mengirim field tertentu, BE tetap mengisi nilai default.
+
+3. [P1] Terapkan default exam setting saat create exam session.
+
+	- Effort: S-M
+	- Scope: isi nilai awal `duration_minutes`, `show_result_to_user`, `auto_generate_enabled`.
+	- DoD: session tetap bisa dibuat walau FE hanya mengirim field minimum, selama default tersedia.
+
+4. [P1] Pastikan override manual selalu menang atas default.
+
+	- Effort: S
+	- Scope: nilai dari request final tidak boleh ditimpa default.
+	- DoD: admin bisa mengubah semua nilai awal sebelum submit.
+
+5. [P1] Tambahkan test untuk create package dan session.
+
+	- Effort: M
+	- Scope: test fallback default, test override manual, test field mapping.
+	- DoD: ada test yang memastikan exam setting memang dipakai hanya saat create.
+
+#### Catatan implementasi
+
+- FE sebaiknya tetap prefill form dari `GET /api/admin/settings/exam` agar UX lebih baik.
+- BE tetap wajib punya fallback default supaya API aman dipanggil langsung.
+- Update existing record tidak perlu dipaksa mengikuti exam setting lagi.
+- Setting global tidak dipakai langsung oleh runtime attempt; runtime tetap baca package/session final.
 
 ### Core (P0/P1)
 
