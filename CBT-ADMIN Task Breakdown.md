@@ -100,7 +100,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Bank mapping UI
 - ✅ Validasi stok soal dari backend
 - ✅ **Kolom `section` sudah dihapus** dari `bank-mapping-editor.tsx` — kolom yang tersisa: Bank Soal, Jumlah, Urutan, Action
-- ⚠️ **Input Jumlah Soal** — field bisa menjadi string kosong saat dihapus (serialize jadi `0` tanpa warning); perlu tambah validasi `onBlur`
+- ✅ **Input Jumlah Soal** — field dinormalisasi minimal `1` saat blur dan saat serialize `banks_json`
 
 ### 11. Exam Session Management
 - ✅ List dengan filter status/date
@@ -125,7 +125,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Export Excel/CSV via route handler
 - ✅ **Export dengan session_id filter**
 - ✅ **Custom detail page** dengan score visualization
-- ✅ **Analytics Dashboard** — Visualisasi skor rata-rata per sesi, paket, dan section beserta fix struktur paginasi API (`route.ts`).
+- ✅ **Analytics Dashboard** — Visualisasi skor rata-rata per sesi dan paket beserta fix struktur paginasi API (`route.ts`).
 
 ### 14. Forms, Mutations, dan Revalidation
 - ✅ Server actions untuk semua modul
@@ -167,23 +167,20 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **Global Exam Settings** — Modul pengaturan default ujian (durasi, tab switch, shuffle, show result) di `/admin/settings`.
 - ✅ **Exam Session Management** — Tambahan aksi *Finish* dan *Cancel* untuk manajemen paksa siklus ujian.
 - ✅ **Activity Logs** — Halaman pantauan log aktivitas admin dan peserta.
-- ✅ **Analytics Dashboard** — Visualisasi performa tes per sesi, paket, atau section.
+- ✅ **Analytics Dashboard** — Visualisasi performa tes per sesi dan paket.
 
 ### 19. Client Feedback Refinement (Sprint P4)
 - ✅ **Hapus Section & Difficulty (Buat Soal)** — Field "Section" dan "Difficulty" sudah tidak ada di `question-form.tsx`.
 - ✅ **Hapus Section (Exam Package)** — Kolom "Section" sudah tidak ada di `bank-mapping-editor.tsx`.
 - ✅ **Fix Download Template Import** — Tombol Download Template men-*generate* CSV langsung di frontend via `data:text/csv` URL (tidak lagi hit API yang error 401).
 - ✅ **UI Buat Soal Massal** — Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator` gaya Google Forms (kartu per soal, stem + opsi A–D).
-- ⚠️ **Perbaikan Input Jumlah Soal** — Field "Jumlah" di bank mapping masih bisa kosong (belum ada validasi `onBlur`); saat kosong nilai akan dikirim sebagai `0`.
+- ✅ **Perbaikan Input Jumlah Soal** — Field "Jumlah" di bank mapping tidak lagi terkirim sebagai `0`; nilai kosong dinormalisasi minimal `1`.
 
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
 
-- 🎉 **Semua task untuk sprint P0 - P4 telah diselesaikan!** (kecuali 1 item minor di bawah)
-
-### Sisa 1 Item Minor (P4)
-- ⚠️ **Validasi input "Jumlah Soal" di Bank Mapping Editor** — saat user menghapus semua angka, field menjadi string kosong dan dikirim sebagai `0`. Perlu tambah validasi `onBlur` atau default value di `bank-mapping-editor.tsx`.
+- 🎉 **Semua task untuk sprint P0 - P4 telah diselesaikan.**
 
 ---
 
@@ -221,9 +218,9 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - Aksi Finish/Cancel pada Exam Session ✅
 - Penyesuaian Media Proxy URL ✅
 
-### P4 - Client Feedback Refinement ✅ HAMPIR SELESAI
+### P4 - Client Feedback Refinement ✅ DONE
 - **Hapus Section & Difficulty (Buat Soal):** ✅ Field sudah tidak ada di `question-form.tsx`.
 - **Hapus Section (Exam Package):** ✅ Kolom sudah tidak ada di `bank-mapping-editor.tsx`.
 - **Fix Download Template Import:** ✅ Template di-generate langsung di frontend via `data:text/csv` URL.
 - **[FITUR BARU] UI Buat Soal Massal:** ✅ Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator`.
-- **Perbaikan Input Jumlah Soal:** ⚠️ *Masih ada* — field bisa kosong dan terkirim sebagai `0`; perlu tambah validasi `onBlur` di `bank-mapping-editor.tsx`.
+- **Perbaikan Input Jumlah Soal:** ✅ Field kosong dinormalisasi minimal `1` di `bank-mapping-editor.tsx`.
