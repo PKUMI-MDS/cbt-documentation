@@ -4,6 +4,8 @@
 **Auditor:** Claude AI (Sonnet 4.6)  
 **Scope:** be-cbt (Backend), fe-cbt (Frontend Peserta), cbt-admin (Admin Panel)
 
+**Update FE-CBT 13 Mei 2026:** item FE-only yang tidak menunggu BE/Admin sudah ditindaklanjuti. E2E suite diperbarui dan berhasil dijalankan (41 passed / 13 skipped), kontrak register/payment proof di test disesuaikan, audio payload diperketat agar wajib `question_id`, resume exam memuat nomor soal awal yang benar, dan refactor awal `exam/page.tsx` dimulai dengan ekstraksi `ExamHeader`.
+
 ---
 
 ## Gambaran Sistem
@@ -169,6 +171,16 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 | 🟢 Minor | Tidak ada unit tests (Jest belum dikonfigurasi) | — | Tambah unit tests untuk normalizer & helper functions |
 
 ---
+
+### 2.6 Update FE-CBT 13 Mei 2026
+
+| Item Audit FE | Status 13 Mei 2026 |
+|---|---|
+| Refactor `exam/page.tsx` | PARTIAL - `ExamHeader` sudah diekstrak, kandidat berikutnya `QuestionPanel`, `QuestionNavigator`, `SubmitExamModal`, `ViolationModal` |
+| Dependency arrays `useEffect` | PARTIAL - init effect dan timer effect diperbaiki, state machine tetap backlog |
+| Pause `AccountStatusWatcher` saat exam | DONE - route `/exam` sudah dikecualikan dari polling dan E2E coverage pass |
+| Audio payload `question_id` fallback | DONE - FE tidak lagi fallback ke `attempt_question.id`; request audio ditahan jika `question_id` tidak tersedia |
+| E2E Playwright rerun | DONE - `npm run test:e2e` pass, 41 passed / 13 skipped |
 
 ## 3. Admin Panel — `cbt-admin` (Next.js 16)
 

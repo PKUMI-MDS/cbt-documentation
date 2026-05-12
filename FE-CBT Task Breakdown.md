@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend terbaru.
 
-**Last Updated:** 2026-05-12
+**Last Updated:** 2026-05-13
 
 ---
 
@@ -22,7 +22,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | **API Integration** | DONE - adapter response ada di `lib/auth-api.ts` untuk menormalkan response BE terbaru |
 | **Server Middleware** | DONE - `middleware.ts` aktif untuk protected route berbasis cookie token |
 | **Global UI States** | DONE - `loading.tsx`, `error.tsx`, `not-found.tsx` |
-| **E2E Tests** | PARTIAL - file Playwright tersedia, eksekusi manual/E2E terakhir belum dijalankan ulang |
+| **E2E Tests** | DONE - Playwright updated untuk kontrak FE/BE terbaru dan berhasil dijalankan |
 
 ---
 
@@ -256,7 +256,7 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
   - `npx tsc --noEmit --pretty false` - PASS
   - `npm run lint` - PASS
   - `npm run build` - PASS
-- Smoke test browser/manual belum dijalankan ulang setelah patch adapter 2026-05-12.
+  - `npm run test:e2e` - PASS, 41 passed / 13 skipped karena skenario auth/data-dependent dan 1 loading-state test yang flaky.
 
 ---
 
@@ -280,7 +280,7 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 |---|-------|--------|---------|
 | 1 | Loading skeleton | DONE | Dashboard, history, exam, profile |
 | 2 | State management | DONE | `@tanstack/react-query` |
-| 3 | E2E tests execution | PARTIAL | File ada, perlu rerun setelah patch adapter terbaru |
+| 3 | E2E tests execution | DONE | Playwright suite sudah disesuaikan kontrak terbaru dan pass |
 | 4 | Responsive mobile exam | DONE | Layout soal dan navigasi grid |
 | 5 | Accessibility | DONE | Focus state, aria, keyboard navigation dasar |
 | 6 | Score detail fetch | DONE | `getAttemptResult()` dedicated endpoint |
@@ -312,6 +312,23 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 ---
 
 ## Perubahan Terbaru
+
+### 13 Mei 2026
+
+- Navbar `History` disembunyikan untuk guest dan hanya muncul setelah participant login.
+- Exam page mulai dipecah ke komponen kecil; `ExamHeader` sudah diekstrak dari `app/exam/page.tsx`.
+- Resume exam diperbaiki agar initial question yang dimuat mengikuti `current_question_number` dari backend, bukan selalu state awal soal 1.
+- Audio play tidak lagi fallback dari `question_id` ke `attempt_question.id`; jika backend tidak mengirim `question_id`, FE menampilkan error aman dan tidak mengirim payload yang salah.
+- E2E tests disesuaikan dengan kontrak terbaru:
+  - register tidak lagi memakai `exam_type`
+  - payment proof tidak lagi memakai `amount` dan `payment_date`
+  - limit upload proof disamakan ke 5MB
+  - URL assertion tidak hardcode `localhost:3000`
+- Verifikasi:
+  - `npx tsc --noEmit --pretty false` - PASS
+  - `npm run lint` - PASS
+  - `npm run build` - PASS
+  - `npm run test:e2e` - PASS, 41 passed / 13 skipped
 
 ### 12 Mei 2026
 
@@ -351,30 +368,25 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 
 ## Next Tasks
 
-1. **Manual smoke test FE peserta**
-   - login
-   - dashboard
-   - payment proof
-   - waiting approval
-   - start/resume exam
-   - get question
-   - save answer
-   - audio play
-   - violation logging
-   - submit
-   - completed/history/score
-
-2. **BE: expose public exam settings untuk peserta**
+1. **BE: expose public exam settings untuk peserta**
    - Endpoint yang dibutuhkan FE:
      - `GET /api/settings/exam`
    - Selama belum ada endpoint ini, FE memakai fallback default.
 
-3. **Edit Profile**
+2. **Edit Profile**
    - Menunggu endpoint BE:
      - `PATCH /api/my/profile`
 
-4. **Forgot Password**
+3. **Forgot Password**
    - Menunggu endpoint BE untuk reset password.
+
+4. **Lanjutan refactor exam page**
+   - `ExamHeader` sudah diekstrak.
+   - Kandidat ekstraksi berikutnya:
+     - `QuestionPanel`
+     - `QuestionNavigator`
+     - `SubmitExamModal`
+     - `ViolationModal`
 
 ---
 
