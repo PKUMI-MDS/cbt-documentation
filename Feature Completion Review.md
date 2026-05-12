@@ -12,9 +12,9 @@
 |---|---|---|---|---|---|
 | **be-cbt** | Phase 1–8 + Ops | ~95 task | 5 task | 2 task | **93%** |
 | **fe-cbt** | All Sections | 120 task | 6 task | 2 task | **94%** |
-| **cbt-admin** | P0–P4 | 31 task | 0 task* | 1 task | **91%** |
+| **cbt-admin** | P0–P4 + hardening | 37 task | 0 task | 0 task | **100%** |
 
-> *Catatan: 3 task P4 cbt-admin yang tercatat "missing" di dokumentasi ternyata **sudah selesai di kode** tetapi dokumentasi belum diperbarui.
+> *Catatan cbt-admin: item P4 dan hardening hasil review sudah diselesaikan dan dokumentasi sudah diperbarui.
 
 ---
 
@@ -217,7 +217,7 @@
 
 ## 3. Admin Panel — `cbt-admin`
 
-### ✅ Sudah Selesai (P0–P3)
+### ✅ Sudah Selesai (P0–P4 + Hardening)
 
 **P0 — Integrasi Wajib**
 - [x] Loading state tombol action (`useFormStatus`)
@@ -255,11 +255,19 @@
 - [x] Analytics dashboard (skor rata-rata per sesi/paket)
 - [x] Exam settings prefill form create package & session
 
-**P4 — Client Feedback** *(Kode sudah selesai, dokumentasi belum diupdate)*
+**P4 — Client Feedback**
 - [x] Field `section` & `difficulty` di question form → **sudah dihapus dari kode**
 - [x] Kolom `section` di bank mapping editor → **tidak ada di kode**
 - [x] Fix download template import (error 401) → **sudah generate client-side via `data:` URL**
 - [x] UI buat soal massal (Google Forms style) → **sudah ada di `/admin/questions/batch/`** dengan `BulkQuestionCreator`
+
+**Hardening dari Feature Completion Review**
+- [x] `as any` di analytics route diganti interface TypeScript eksplisit
+- [x] Output HTML TipTap disanitasi sebelum render `dangerouslySetInnerHTML`
+- [x] `admin-api.ts` dipecah menjadi facade + modul `src/lib/admin-api/*`
+- [x] Input `question_count` bank mapping divalidasi minimal 1 saat blur dan serialize
+- [x] Monitoring detail menampilkan indikator `Refreshing...` dan waktu sinkron terakhir
+- [x] CSP/security headers ditambahkan di `next.config.ts`
 
 **API Integration**
 - [x] 45/45 admin endpoint tersambung (100%)
@@ -270,14 +278,9 @@
 
 ### ❌ Belum Selesai / Masalah Ditemukan
 
-| # | Masalah | Severity | Lokasi | Rekomendasi |
+| # | Masalah | Severity | Lokasi | Status |
 |---|---|---|---|---|
-| 1 | **`as any` type cast** di analytics route menyembunyikan potential type errors | 🔴 High | `src/app/api/admin/analytics/route.ts` | Ganti dengan proper TypeScript interface |
-| 2 | **Tidak ada XSS sanitization** untuk output HTML dari TipTap saat di-render dengan `dangerouslySetInnerHTML` | 🟡 Medium | Komponen yang render HTML konten soal | Tambah `DOMPurify` atau `sanitize-html` sebelum render |
-| 3 | **`admin-api.ts` terlalu besar (1885 baris)** — semua CRUD logic dalam satu file | 🟡 Medium | `src/lib/admin-api.ts` | Split by module: `admin-users.ts`, `admin-questions.ts`, `admin-sessions.ts`, dll. |
-| 4 | **Input `question_count` di bank mapping bisa string kosong** → serialize jadi `0` tanpa warning ke user | 🟢 Low | `src/components/bank-mapping-editor.tsx` baris ±100–107 | Tambah validasi/default saat `onBlur` |
-| 5 | **Live refresh monitoring tanpa visual indicator** "refreshing..." | 🟢 Low | `src/components/monitoring-detail.tsx` | Tambah subtle loading hint |
-| 6 | **Dokumentasi Task Breakdown P4 belum diupdate** — 4 task tercatat pending padahal sudah selesai di kode | 🟢 Low | `cbt-documentation/CBT-ADMIN Task Breakdown.md` | Update status task P4 |
+| - | Tidak ada item outstanding untuk `cbt-admin` setelah audit ulang 12 Mei 2026 | - | `cbt-admin` | ✅ Selesai |
 
 ---
 
@@ -287,47 +290,41 @@
 
 | # | Task | Sub-project | Estimasi |
 |---|---|---|---|
-| 1 | Fix `as any` di `src/app/api/admin/analytics/route.ts` | cbt-admin | 15 menit |
-| 2 | Tambah endpoint public `GET /api/settings/exam` untuk peserta (tanpa auth) | be-cbt | 30 menit |
-| 3 | Update `API_DOCUMENTATION.md` — hapus `section_type` dari spesifikasi CSV import | be-cbt | 15 menit |
-| 4 | Jalankan E2E test suite fe-cbt: `npx playwright test` | fe-cbt | 30 menit (run) |
-| 5 | Smoke test manual seluruh flow: register → payment → exam → result | semua | 2 jam |
+| 1 | Tambah endpoint public `GET /api/settings/exam` untuk peserta (tanpa auth) | be-cbt | 30 menit |
+| 2 | Update `API_DOCUMENTATION.md` — hapus `section_type` dari spesifikasi CSV import | be-cbt | 15 menit |
+| 3 | Jalankan E2E test suite fe-cbt: `npx playwright test` | fe-cbt | 30 menit (run) |
+| 4 | Smoke test manual seluruh flow: register → payment → exam → result | semua | 2 jam |
 
 ### 🟡 P1 — Sprint Ini
 
 | # | Task | Sub-project | Estimasi |
 |---|---|---|---|
-| 6 | Fix `AuthController.php:62` — hapus role check anti-double login agar berlaku untuk admin | be-cbt | 30 menit |
-| 7 | Fix session status transition `publish()` — tambah `canTransitionTo()` guard | be-cbt | 1 jam |
-| 8 | Refactor `app/exam/page.tsx` — split ke sub-components | fe-cbt | 3–4 jam |
-| 9 | Fix silent failures di exam page — tambah toast/warning untuk catch blocks | fe-cbt | 1 jam |
-| 10 | Pause `AccountStatusWatcher` polling saat user sedang ujian | fe-cbt | 30 menit |
-| 11 | Tambah XSS sanitization untuk output TipTap HTML | cbt-admin | 1 jam |
-| 12 | Update `CBT-ADMIN Task Breakdown.md` — tandai P4 items sebagai ✅ DONE | cbt-documentation | 15 menit |
+| 5 | Fix `AuthController.php:62` — hapus role check anti-double login agar berlaku untuk admin | be-cbt | 30 menit |
+| 6 | Fix session status transition `publish()` — tambah `canTransitionTo()` guard | be-cbt | 1 jam |
+| 7 | Refactor `app/exam/page.tsx` — split ke sub-components | fe-cbt | 3–4 jam |
+| 8 | Fix silent failures di exam page — tambah toast/warning untuk catch blocks | fe-cbt | 1 jam |
+| 9 | Pause `AccountStatusWatcher` polling saat user sedang ujian | fe-cbt | 30 menit |
 
 ### 🟢 P2 — Backlog
 
 | # | Task | Sub-project | Estimasi |
 |---|---|---|---|
-| 13 | Implementasi `POST /api/forgot-password` + `PATCH /api/my/profile` | be-cbt | 4–6 jam |
-| 14 | Implementasi forgot password page + edit profile di fe-cbt (setelah BE siap) | fe-cbt | 3–4 jam |
-| 15 | Implementasi validasi signed URL di `MediaController` | be-cbt | 2 jam |
-| 16 | Tambah unit tests untuk service layer BE (ExamEngineService, ScoringService) | be-cbt | 8 jam |
-| 17 | Split `admin-api.ts` by module | cbt-admin | 4 jam |
-| 18 | Fix input `question_count` di `bank-mapping-editor.tsx` | cbt-admin | 1 jam |
-| 19 | Tambah visual indicator "refreshing..." di monitoring detail | cbt-admin | 30 menit |
-| 20 | Tambah unit tests normalizer & helper di fe-cbt | fe-cbt | 3 jam |
+| 10 | Implementasi `POST /api/forgot-password` + `PATCH /api/my/profile` | be-cbt | 4–6 jam |
+| 11 | Implementasi forgot password page + edit profile di fe-cbt (setelah BE siap) | fe-cbt | 3–4 jam |
+| 12 | Implementasi validasi signed URL di `MediaController` | be-cbt | 2 jam |
+| 13 | Tambah unit tests untuk service layer BE (ExamEngineService, ScoringService) | be-cbt | 8 jam |
+| 14 | Tambah unit tests normalizer & helper di fe-cbt | fe-cbt | 3 jam |
 
 ### 🔵 P3 — Long-term / Pasca-Launch
 
 | # | Task | Sub-project | Estimasi |
 |---|---|---|---|
-| 21 | Upgrade fe-cbt dari Next.js 14 ke Next.js 16 (align dengan cbt-admin) | fe-cbt | 2–3 hari |
-| 22 | Tambah Content Security Policy (CSP) headers | fe-cbt + cbt-admin | 4 jam |
-| 23 | Tambah error tracking (Sentry) | semua | 4 jam |
-| 24 | Virus scan untuk file upload sebelum simpan | be-cbt | 4 jam |
-| 25 | Notifikasi WhatsApp | be-cbt | 8–12 jam |
-| 26 | Pembahasan soal post-exam | be-cbt + fe-cbt | 16–20 jam |
+| 15 | Upgrade fe-cbt dari Next.js 14 ke Next.js 16 (align dengan cbt-admin) | fe-cbt | 2–3 hari |
+| 16 | Tambah Content Security Policy (CSP) headers untuk fe-cbt (cbt-admin selesai) | fe-cbt | 4 jam |
+| 17 | Tambah error tracking (Sentry) | semua | 4 jam |
+| 18 | Virus scan untuk file upload sebelum simpan | be-cbt | 4 jam |
+| 19 | Notifikasi WhatsApp | be-cbt | 8–12 jam |
+| 20 | Pembahasan soal post-exam | be-cbt + fe-cbt | 16–20 jam |
 
 ---
 
@@ -376,7 +373,7 @@
 |---|---|---|
 | Backend API | ✅ Ready | Fix 3 item P0 BE di atas |
 | Frontend Peserta | ✅ Ready | E2E test + fix exam page |
-| Admin Panel | ✅ Ready | Fix `as any` + XSS sanitize |
+| Admin Panel | ✅ Ready | Tidak ada blocker cbt-admin dari review ini |
 | Infrastructure | ✅ Ready | Queue, scheduler, backup, log rotation documented |
 
 **Estimasi waktu untuk selesaikan semua P0:** < 1 hari kerja  

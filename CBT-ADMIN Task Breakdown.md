@@ -31,6 +31,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | **Monitoring** | ✅ Custom detail page + live refresh fetch data baru |
 | **Violations** | ✅ Custom detail page + severity color coding |
 | **Card View Mobile** | ✅ Table di desktop, card view di mobile |
+| **Security Hardening** | ✅ Sanitasi HTML TipTap + CSP/security headers |
 
 ---
 
@@ -49,6 +50,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 
 ### 3. API Client dan Data Fetching
 - ✅ Server-only API client
+- ✅ `admin-api.ts` sudah menjadi facade re-export; logic dipisah per modul di `src/lib/admin-api/*`
 - ✅ Bearer token dari cookie
 - ✅ List/detail request
 - ✅ Pagination metadata
@@ -119,6 +121,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Violations list
 - ✅ **Custom detail page** dengan live countdown, progress bar, stats grid
 - ✅ **Live refresh** fetch data baru setiap 30 detik via `/api/monitoring/{id}`
+- ✅ **Refresh indicator** — tombol menampilkan `Refreshing...` dan waktu sinkron terakhir
 
 ### 13. Results dan Export
 - ✅ Results list dengan filter session_id
@@ -176,11 +179,30 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **UI Buat Soal Massal** — Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator` gaya Google Forms (kartu per soal, stem + opsi A–D).
 - ✅ **Perbaikan Input Jumlah Soal** — Field "Jumlah" di bank mapping tidak lagi terkirim sebagai `0`; nilai kosong dinormalisasi minimal `1`.
 
+### 20. Feature Completion Review Hardening
+- ✅ **Analytics route type-safety** — `as any` diganti dengan interface response eksplisit.
+- ✅ **Sanitasi HTML TipTap** — semua `dangerouslySetInnerHTML` untuk konten soal melewati `sanitizeHtml`.
+- ✅ **Refactor Admin API Client** — `admin-api.ts` dipecah menjadi facade + modul `analytics`, `auth`, `module-pages`, `questions`, `exam-packages`, `exam-sessions`, `monitoring`, dan `settings`.
+- ✅ **Input Question Count** — `question_count` bank mapping dinormalisasi minimal `1` saat blur dan serialize.
+- ✅ **Monitoring refresh feedback** — tombol refresh disabled saat fetch dan menampilkan indikator putar.
+- ✅ **Security headers** — CSP, `X-Content-Type-Options`, `Referrer-Policy`, dan `X-Frame-Options` ditambahkan di `next.config.ts`.
+
+#### Mapping dari `Feature Completion Review`
+
+| Item Review | Lokasi Implementasi | Status | Catatan |
+|---|---|---|---|
+| Fix `as any` di analytics route | `src/app/api/admin/analytics/route.ts` | ✅ DONE | Response analytics sudah memakai tipe eksplisit, tidak lagi memakai `as any`. |
+| Tambah XSS sanitization untuk output TipTap HTML | `src/lib/sanitize-html.ts`, `src/components/module-detail-page.tsx`, `src/components/question-form-fields.tsx` | ✅ DONE | Konten stem, explanation, option, dan preview HTML disanitasi sebelum `dangerouslySetInnerHTML`. |
+| Split `admin-api.ts` by module | `src/lib/admin-api.ts`, `src/lib/admin-api/*` | ✅ DONE | `admin-api.ts` menjadi facade re-export; logic dipisah ke modul domain. |
+| Fix input `question_count` bank mapping | `src/components/bank-mapping-editor.tsx` | ✅ DONE | Nilai kosong dinormalisasi minimal `1` saat blur dan saat serialize `banks_json`. |
+| Tambah visual indicator `Refreshing...` di monitoring detail | `src/components/monitoring-detail.tsx` | ✅ DONE | Tombol refresh disabled saat fetch, icon berputar, dan waktu sinkron terakhir ditampilkan. |
+| Tambah CSP/security headers untuk `cbt-admin` | `next.config.ts` | ✅ DONE | CSP, `nosniff`, `Referrer-Policy`, dan `X-Frame-Options` sudah aktif lewat `headers()`. |
+
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
 
-- 🎉 **Semua task untuk sprint P0 - P4 telah diselesaikan.**
+- 🎉 **Semua task untuk sprint P0 - P4 dan Feature Completion Review Hardening telah diselesaikan.**
 
 ---
 
@@ -224,3 +246,11 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - **Fix Download Template Import:** ✅ Template di-generate langsung di frontend via `data:text/csv` URL.
 - **[FITUR BARU] UI Buat Soal Massal:** ✅ Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator`.
 - **Perbaikan Input Jumlah Soal:** ✅ Field kosong dinormalisasi minimal `1` di `bank-mapping-editor.tsx`.
+
+### Feature Completion Review Hardening ✅ DONE
+- Fix `as any` di analytics route ✅
+- Tambah XSS sanitization untuk output TipTap HTML ✅
+- Split `admin-api.ts` by module ✅
+- Fix input `question_count` bank mapping ✅
+- Tambah visual indicator `Refreshing...` di monitoring detail ✅
+- Tambah CSP/security headers untuk `cbt-admin` ✅
