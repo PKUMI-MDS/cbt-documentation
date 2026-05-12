@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan kondisi repo saat ini dan API admin backend.
 
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-12
 
 ---
 
@@ -15,7 +15,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | **Auth** | ✅ Cookie-based, layout guard, logout |
 | **Dashboard** | ✅ Stats real-time dari API + chart |
 | **Question Banks** | ✅ CRUD lengkap + warning usage |
-| **Questions** | ✅ CRUD + media upload + **RTE TipTap** + preview image/audio |
+| **Questions** | ✅ CRUD + media upload + **RTE TipTap** + preview image/audio + **batch creator** |
 | **Exam Packages** | ✅ CRUD + bank mapping |
 | **Exam Sessions** | ✅ CRUD + publish/close + **participant management** |
 | **User Management** | ✅ Approve/reject/reset password (actions ready) |
@@ -91,13 +91,16 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **Rich text editor (TipTap)** — toolbar dengan bold, italic, underline, heading, align, list, quote, code block
 - ✅ Option editor dengan exactly one correct
 - ✅ Media upload (image/audio)
-- ✅ `difficulty_level` field
 - ✅ **Media preview** — image (`<img>`) dan audio (`<audio>`) di form dan detail
+- ✅ **Field `section` dan `difficulty_level` sudah dihapus** dari form (`question-form.tsx`) — sesuai client feedback P4
+- ✅ **Bulk/Batch Question Creator** — halaman `/admin/questions/batch` dengan gaya Google Forms (kartu per soal, stem + opsi A–D, tanpa section/difficulty)
 
 ### 10. Exam Package Builder
 - ✅ CRUD dengan banks array
 - ✅ Bank mapping UI
 - ✅ Validasi stok soal dari backend
+- ✅ **Kolom `section` sudah dihapus** dari `bank-mapping-editor.tsx` — kolom yang tersisa: Bank Soal, Jumlah, Urutan, Action
+- ⚠️ **Input Jumlah Soal** — field bisa menjadi string kosong saat dihapus (serialize jadi `0` tanpa warning); perlu tambah validasi `onBlur`
 
 ### 11. Exam Session Management
 - ✅ List dengan filter status/date
@@ -166,11 +169,21 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **Activity Logs** — Halaman pantauan log aktivitas admin dan peserta.
 - ✅ **Analytics Dashboard** — Visualisasi performa tes per sesi, paket, atau section.
 
+### 19. Client Feedback Refinement (Sprint P4)
+- ✅ **Hapus Section & Difficulty (Buat Soal)** — Field "Section" dan "Difficulty" sudah tidak ada di `question-form.tsx`.
+- ✅ **Hapus Section (Exam Package)** — Kolom "Section" sudah tidak ada di `bank-mapping-editor.tsx`.
+- ✅ **Fix Download Template Import** — Tombol Download Template men-*generate* CSV langsung di frontend via `data:text/csv` URL (tidak lagi hit API yang error 401).
+- ✅ **UI Buat Soal Massal** — Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator` gaya Google Forms (kartu per soal, stem + opsi A–D).
+- ⚠️ **Perbaikan Input Jumlah Soal** — Field "Jumlah" di bank mapping masih bisa kosong (belum ada validasi `onBlur`); saat kosong nilai akan dikirim sebagai `0`.
+
 ---
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
 
-- 🎉 **Semua task untuk sprint P0 - P3 telah diselesaikan!** Tidak ada backlog atau task yang tertunda saat ini. Semua pembaruan dari Backend sudah terintegrasi penuh.
+- 🎉 **Semua task untuk sprint P0 - P4 telah diselesaikan!** (kecuali 1 item minor di bawah)
+
+### Sisa 1 Item Minor (P4)
+- ⚠️ **Validasi input "Jumlah Soal" di Bank Mapping Editor** — saat user menghapus semua angka, field menjadi string kosong dan dikirim sebagai `0`. Perlu tambah validasi `onBlur` atau default value di `bank-mapping-editor.tsx`.
 
 ---
 
@@ -208,9 +221,9 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - Aksi Finish/Cancel pada Exam Session ✅
 - Penyesuaian Media Proxy URL ✅
 
-### P4 - Client Feedback Refinement ❌
-- **Hapus Section & Difficulty (Buat Soal):** Menghilangkan field "Section" dan "Difficulty" di halaman `question-form.tsx`. ❌
-- **Hapus Section (Exam Package):** Menghilangkan kolom "Section" di halaman `bank-mapping-editor.tsx`. ❌
-- **Perbaikan Input Jumlah Soal:** Memperbaiki bug pada input "Jumlah" di Exam Package agar bisa diketik dan dihapus dengan leluasa. ❌
-- **Fix Download Template Import:** Mengubah tombol Download Template agar *generate* CSV langsung di frontend (mengatasi error 401). ❌
-- **[FITUR BARU] UI Buat Soal Massal:** Membuat halaman baru (`/admin/questions/batch`) dengan gaya *Google Forms* (berbasis kartu). Form ini hanya akan berisi *Pertanyaan* dan *Opsi A-D* (tanpa Section/Difficulty). ❌
+### P4 - Client Feedback Refinement ✅ HAMPIR SELESAI
+- **Hapus Section & Difficulty (Buat Soal):** ✅ Field sudah tidak ada di `question-form.tsx`.
+- **Hapus Section (Exam Package):** ✅ Kolom sudah tidak ada di `bank-mapping-editor.tsx`.
+- **Fix Download Template Import:** ✅ Template di-generate langsung di frontend via `data:text/csv` URL.
+- **[FITUR BARU] UI Buat Soal Massal:** ✅ Halaman `/admin/questions/batch` sudah tersedia dengan komponen `BulkQuestionCreator`.
+- **Perbaikan Input Jumlah Soal:** ⚠️ *Masih ada* — field bisa kosong dan terkirim sebagai `0`; perlu tambah validasi `onBlur` di `bank-mapping-editor.tsx`.

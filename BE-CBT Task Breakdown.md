@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo saat ini, dokumen existing di `cbt-documentation`, dan kontrak API yang sudah muncul di `be-cbt/API_DOCUMENTATION.md`.
 
-**Last Updated:** 2026-05-12
+**Last Updated:** 2026-05-12 (rev. audit)
 
 ---
 
@@ -54,7 +54,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 |------|--------|
 | **Auth** | ✅ Sanctum, role, middleware |
 | **Database** | ✅ 29 migrations, 19 models, relasi lengkap |
-| **API Endpoints** | ✅ ~47 endpoint (admin + user) |
+| **API Endpoints** | ✅ ~74 endpoint (admin + user) |
 | **Exam Engine** | ✅ Snapshot, randomisasi, timer, scoring |
 | **Payment Proof** | ✅ Upload, approve, reject + preview endpoint (schema: removed amount, payment_date) |
 | **Question API** | ✅ CRUD + validasi + bank sync (schema: removed question_type, difficulty_level, section_type) |
@@ -81,7 +81,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Middleware admin dan active account
 - ✅ Response login membedakan status (pending, rejected, suspended)
 - ✅ Admin bisa login (role check)
-- ✅ Anti-double login: token lama di-revoke saat login baru
+- ✅ Anti-double login: token lama di-revoke saat login baru — berlaku untuk **participant**. Admin secara by-design dikecualikan (`AuthController.php` baris 62: `if ($user->role !== 'admin')`) agar admin bisa login dari banyak device sekaligus.
 
 ### 2. Registration dan Payment Proof
 - ✅ `POST /api/register`
@@ -217,7 +217,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
 | 1 | **Feature tests** | ✅ Selesai | 21 tests: Auth, Payment, Question Bank, User Management |
-| 2 | **Anti-double login** | ✅ Selesai | Token lama di-revoke, hanya 1 sesi aktif |
+| 2 | **Anti-double login** | ✅ Selesai | Token lama di-revoke untuk participant. Admin by-design dikecualikan (bisa multi-device). |
 | 3 | **Audit log** | ✅ Selesai | `LogsActivity` di model + endpoint activity log |
 | 4 | **Settings endpoint** | ✅ Selesai | `GET/PATCH /api/admin/settings/exam` tersedia |
 | 5 | **Session lifecycle** | ✅ Selesai | Endpoint finish/cancel + guard transisi |
@@ -247,8 +247,25 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 
 ## ⚠️ Item Yang Memerlukan Tindak Lanjut
 
-### Test Coverage Pending
+### 1. Test Coverage Pending
 Tidak ada lagi test/factory aktif yang memakai kolom schema lama (`section_type`, `question_type`, `difficulty_level`, `listening_score`, `structure_score`, `reading_score`). Tindak lanjut yang masih relevan adalah menambah coverage khusus untuk default exam setting pada create package/session.
+
+### 2. Session `publish()` Tidak Ada Guard Transisi
+- **File:** `app/Http/Controllers/Api/Admin/ExamSessionController.php` baris 75–87
+- **Masalah:** Method `publish()` langsung update status ke `PUBLISHED` tanpa memanggil `canTransitionTo()`, sementara `close()`, `finish()`, dan `cancel()` sudah pakai guard.
+- **Dampak:** Session berstatus `FINISHED` atau `CANCELLED` bisa di-publish ulang.
+- **Fix:** Tambahkan guard sebelum update, contoh: `if (!$this->canTransitionTo($session->status, ExamSessionStatus::PUBLISHED)) { return $this->error(...); }`
+
+### 3. `API_DOCUMENTATION.md` Masih Menyebut `section_type`
+- **File:** `API_DOCUMENTATION.md` baris 193, 221, 247, 293, 306, 309
+- **Masalah:** Field `section_type` sudah dihapus dari schema via migration `2026_05_12_000000`, tetapi dokumentasi API masih mencantumkannya sebagai required field di CSV import dan endpoint question/package.
+- **Dampak:** Menyesatkan developer yang mengintegrasikan API.
+- **Fix:** Hapus semua referensi `section_type` dari `API_DOCUMENTATION.md` dan perbarui contoh payload CSV import.
+
+### 4. Belum Ada Endpoint Public Settings untuk Peserta
+- **File:** `routes/api.php`
+- **Masalah:** `GET /api/admin/settings/exam` hanya bisa diakses admin. FE peserta (`fe-cbt`) membutuhkan endpoint tanpa auth untuk membaca nilai `max_tab_switch` dan `max_fullscreen_exit`, sehingga saat ini FE menggunakan hardcode fallback (3/3).
+- **Fix:** Tambahkan route publik atau peserta: `GET /api/settings/exam` yang hanya mengembalikan field yang aman dibaca peserta (bukan semua setting admin).
 
 ---
 
