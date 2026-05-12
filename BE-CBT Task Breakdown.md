@@ -2,7 +2,27 @@
 
 Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo saat ini, dokumen existing di `cbt-documentation`, dan kontrak API yang sudah muncul di `be-cbt/API_DOCUMENTATION.md`.
 
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-12
+
+---
+
+## Perubahan Terbaru (2026-05-12)
+
+### Schema & Field Changes (Lanjutan)
+- ✅ Removed `section_type` dari tabel `questions`, `exam_package_banks`, `exam_attempt_questions` (migration `2026_05_12_000000`)
+- ✅ Removed `listening_score`, `structure_score`, `reading_score` dari tabel `exam_results` (migration `2026_05_12_000000`)
+- ✅ Migration dilengkapi `try-catch` pada `dropIndex` agar aman dijalankan di VPS tanpa `migrate:fresh`
+
+### Code Cleanup
+- ✅ `ExamPackageController::syncBanks()` — dihapus `section_type` dari `ExamPackageBank::create()`
+- ✅ `QuestionImportController` — dihapus validasi dan assignment `section_type` dari CSV import
+- ✅ `NotificationService` — dihapus `listeningScore`, `structureScore`, `readingScore` dari email notifikasi
+- ✅ `ResultsExport` — dihapus kolom section score dari heading dan mapping export Excel
+
+### Frontend (cbt-admin)
+- ✅ Removed field `Code` display dari `QuestionBankForm`, `ExamPackageForm`, `ExamSessionForm` — code kini sepenuhnya di-generate backend
+- ✅ Removed `Amount` dan `Payment Date` dari detail view bukti pembayaran di admin panel
+- ✅ Removed `Type` dan `Difficulty` dari detail view soal di admin panel
 
 ---
 
@@ -27,15 +47,17 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | Area | Status |
 |------|--------|
 | **Auth** | ✅ Sanctum, role, middleware |
-| **Database** | ✅ 24 migrations, 20 models, relasi lengkap |
+| **Database** | ✅ 29 migrations, 19 models, relasi lengkap |
 | **API Endpoints** | ✅ ~47 endpoint (admin + user) |
 | **Exam Engine** | ✅ Snapshot, randomisasi, timer, scoring |
-| **Payment Proof** | ✅ Upload, approve, reject + preview endpoint (schema cleaned: removed amount, payment_date) |
-| **Question API** | ✅ CRUD + validasi + bank sync (schema cleaned: removed question_type, difficulty_level) |
-| **Question Import** | ✅ CSV import + template download (updated for new schema) |
+| **Payment Proof** | ✅ Upload, approve, reject + preview endpoint (schema: removed amount, payment_date) |
+| **Question API** | ✅ CRUD + validasi + bank sync (schema: removed question_type, difficulty_level, section_type) |
+| **Question Import** | ✅ CSV import + template download (tidak perlu section_type lagi) |
+| **Exam Package** | ✅ CRUD + bank sync tanpa section_type |
+| **Exam Result** | ✅ Scoring hanya total_score (removed listening/structure/reading score) |
 | **Session Validation** | ✅ `date_format:H:i` untuk time |
-| **Feature Tests** | ✅ 21 test cases (Auth, Payment, Question Bank, User Management) |
-| **Auto-generate Code** | ✅ QB/PKG/SES codes auto-generated if not provided |
+| **Feature Tests** | ⚠️ 10 test files — 4 file perlu update karena kolom lama (section_type, listening_score) |
+| **Auto-generate Code** | ✅ QB/PKG/SES codes auto-generated — FE tidak perlu kirim code |
 | **Registrations Absent** | ✅ Scheduled command marks registrations absent when session finished |
 | **Phone Validation** | ✅ Digits only, 11-13 chars |
 | **Queue Worker** | ✅ ExportResultsJob + jobs table + dokumentasi |
@@ -213,7 +235,21 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | 3 | **Scheduler** | ✅ Selesai | Auto-close session, auto-submit stale, mark absent |
 | 4 | **Log rotation** | ✅ Selesai | daily channel + PowerShell script |
 | 5 | **Backup DB dan storage** | ✅ Selesai | PowerShell + Bash scripts |
-| 6 | **Schema cleanup migrations** | ✅ Selesai | Drop question_type/difficulty_level, drop amount/payment_date |
+| 6 | **Schema cleanup migrations** | ✅ Selesai | Drop question_type/difficulty_level (2026-05-11), drop amount/payment_date (2026-05-11), drop section_type dari 3 tabel + drop listening/structure/reading score dari exam_results (2026-05-12) |
+
+---
+
+## ⚠️ Item Yang Memerlukan Tindak Lanjut
+
+### Test Files Perlu Diupdate
+Berikut 4 test file yang masih menggunakan kolom schema lama. **Akan gagal jika dijalankan `php artisan test`** setelah migration dijalankan di VPS:
+
+| File | Kolom Lama | Baris |
+|------|-----------|-------|
+| `tests/Feature/VersioningTest.php` | `section_type` | L80 |
+| `tests/Feature/AntiCheatThresholdTest.php` | `section_type` | L53, L77 |
+| `tests/Feature/AdminQuestionBankFlowTest.php` | `section_type` | L163, L191, L207, L242 |
+| `tests/Feature/AdminAnalyticsTest.php` | `listening_score` | L52, L61, L106, L149 |
 
 ---
 
@@ -294,6 +330,7 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 	- Effort: M
 	- Scope: test fallback default, test override manual, test field mapping.
 	- DoD: ada test yang memastikan exam setting memang dipakai hanya saat create.
+	- **Catatan (2026-05-12):** Belum ada test file khusus untuk skenario ini. Tidak blocking deployment, tapi perlu diselesaikan untuk full coverage.
 
 #### Catatan implementasi
 
