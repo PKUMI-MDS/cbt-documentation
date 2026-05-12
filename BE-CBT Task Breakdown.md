@@ -16,13 +16,19 @@ Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo
 ### Code Cleanup
 - ✅ `ExamPackageController::syncBanks()` — dihapus `section_type` dari `ExamPackageBank::create()`
 - ✅ `QuestionImportController` — dihapus validasi dan assignment `section_type` dari CSV import
-- ✅ `NotificationService` — dihapus `listeningScore`, `structureScore`, `readingScore` dari email notifikasi
+- ✅ `NotificationService` dan template `result_published` — dihapus `listeningScore`, `structureScore`, `readingScore` dari email notifikasi
 - ✅ `ResultsExport` — dihapus kolom section score dari heading dan mapping export Excel
+- ✅ `ResponseFormatter::success()` sekarang reset `code/status/message/data` agar response error tidak bocor ke response sukses berikutnya
+- ✅ `AuthController::logout()` menghapus bearer token Sanctum secara eksplisit dan reset guard cache setelah logout
+- ✅ Factories dan feature tests dibersihkan dari kolom schema lama (`section_type`, `question_type`, `difficulty_level`, section score)
 
 ### Frontend (cbt-admin)
 - ✅ Removed field `Code` display dari `QuestionBankForm`, `ExamPackageForm`, `ExamSessionForm` — code kini sepenuhnya di-generate backend
 - ✅ Removed `Amount` dan `Payment Date` dari detail view bukti pembayaran di admin panel
 - ✅ Removed `Type` dan `Difficulty` dari detail view soal di admin panel
+- ✅ Removed `Question Type` dari halaman import soal admin karena `question_type` sudah tidak dipakai
+- ✅ Create form `ExamPackage` dan `ExamSession` sekarang prefill dari `GET /api/admin/settings/exam`
+- ✅ Create `ExamSession` tidak lagi mengirim `code` kosong; backend menerima `code` nullable agar auto-generate `SES-*` berjalan
 
 ---
 
@@ -56,7 +62,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | **Exam Package** | ✅ CRUD + bank sync tanpa section_type |
 | **Exam Result** | ✅ Scoring hanya total_score (removed listening/structure/reading score) |
 | **Session Validation** | ✅ `date_format:H:i` untuk time |
-| **Feature Tests** | ⚠️ 10 test files — 4 file perlu update karena kolom lama (section_type, listening_score) |
+| **Feature Tests** | ✅ Test/factory schema lama sudah diupdate (section_type dan section score dibersihkan) |
 | **Auto-generate Code** | ✅ QB/PKG/SES codes auto-generated — FE tidak perlu kirim code |
 | **Registrations Absent** | ✅ Scheduled command marks registrations absent when session finished |
 | **Phone Validation** | ✅ Digits only, 11-13 chars |
@@ -110,8 +116,8 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ### 5. Exam Package
 - ✅ CRUD package
 - ✅ Bank sync via transaction
-- ✅ Validasi stok soal aktif per bank/section
-- ✅ Validasi unique bank+section combination
+- ✅ Validasi stok soal aktif per bank
+- ✅ Validasi unique bank dalam package
 - ✅ Shuffle questions/options
 
 ### 6. Exam Session dan Participant Assignment
@@ -138,7 +144,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 - ✅ Attempt relasi ke `test_approval_id`
 
 ### 8. Scoring dan Result Visibility
-- ✅ `ScoringService` menghitung total, listening, structure, reading
+- ✅ `ScoringService` menghitung `total_score`, `correct_count`, `wrong_count`, `unanswered_count`
 - ✅ Result resource
 - ✅ Admin results endpoint
 - ✅ Export results to Excel
@@ -225,7 +231,7 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | 1 | **Import bank soal** | ✅ Selesai | CSV import + template download |
 | 2 | **Versioning bank/package** | ✅ Selesai | Auto-increment version saat update; package_version & bank_versions_json tersimpan di attempt |
 | 3 | **Notification email/WhatsApp** | ✅ Selesai | Email notifikasi: approval, rejection, session assigned, result published. Bisa dimatikan via config. |
-| 4 | **Advanced analytics** | ✅ Selesai | Endpoint `/api/admin/analytics` dengan group_by session/package/section |
+| 4 | **Advanced analytics** | ✅ Selesai | Endpoint `/api/admin/analytics` dengan group_by session/package |
 
 ### Deployment dan Operations
 | # | Fitur | Status | Catatan |
@@ -241,15 +247,8 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 
 ## ⚠️ Item Yang Memerlukan Tindak Lanjut
 
-### Test Files Perlu Diupdate
-Berikut 4 test file yang masih menggunakan kolom schema lama. **Akan gagal jika dijalankan `php artisan test`** setelah migration dijalankan di VPS:
-
-| File | Kolom Lama | Baris |
-|------|-----------|-------|
-| `tests/Feature/VersioningTest.php` | `section_type` | L80 |
-| `tests/Feature/AntiCheatThresholdTest.php` | `section_type` | L53, L77 |
-| `tests/Feature/AdminQuestionBankFlowTest.php` | `section_type` | L163, L191, L207, L242 |
-| `tests/Feature/AdminAnalyticsTest.php` | `listening_score` | L52, L61, L106, L149 |
+### Test Coverage Pending
+Tidak ada lagi test/factory aktif yang memakai kolom schema lama (`section_type`, `question_type`, `difficulty_level`, `listening_score`, `structure_score`, `reading_score`). Tindak lanjut yang masih relevan adalah menambah coverage khusus untuk default exam setting pada create package/session.
 
 ---
 
@@ -334,7 +333,7 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 
 #### Catatan implementasi
 
-- FE sebaiknya tetap prefill form dari `GET /api/admin/settings/exam` agar UX lebih baik.
+- FE `cbt-admin` sudah prefill form create package/session dari `GET /api/admin/settings/exam` agar UX konsisten dengan setting global.
 - BE tetap wajib punya fallback default supaya API aman dipanggil langsung.
 - Update existing record tidak perlu dipaksa mengikuti exam setting lagi.
 - Setting global tidak dipakai langsung oleh runtime attempt; runtime tetap baca package/session final.
@@ -477,5 +476,5 @@ Tujuan bagian ini adalah memakai exam setting sebagai data awal saat create exam
 
 1. [P3] Fitur Bulk Create Soal ✅
 	- Effort: M
-	- Scope: Endpoint `POST /api/admin/questions/bulk` menerima `multipart/form-data` array soal (teks, gambar, audio). Section di-bypass dengan nilai `general`.
+	- Scope: Endpoint `POST /api/admin/questions/bulk` menerima `multipart/form-data` array soal (teks, gambar, audio).
 	- DoD: Bisa menyimpan banyak soal sekaligus dengan efisien untuk UI bergaya Google Forms di CBT-Admin.
