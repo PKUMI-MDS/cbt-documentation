@@ -1,233 +1,426 @@
 # FE-CBT Task Breakdown
 
-Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend.
+Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend terbaru.
 
-**Last Updated:** 2026-05-11 (update 2)
+**Last Updated:** 2026-05-12
 
 ---
 
 ## Ringkasan Status
 
-`fe-cbt` adalah aplikasi Next.js 14 dengan integrasi API backend yang sudah sangat lengkap:
+`fe-cbt` adalah aplikasi Next.js 14 untuk peserta CBT. Mayoritas alur utama sudah memakai real API backend, dengan beberapa bagian yang masih menunggu endpoint BE.
 
 | Area | Status |
 |------|--------|
-| **Auth Flow** | ✅ Lengkap (register → login → dashboard/logout) |
-| **Payment Proof** | ✅ Upload & history real API (limit 2MB - sesuai BE) |
-| **Dashboard** | ✅ Real data dari backend |
-| **Exam Engine** | ✅ Full integration (soal, audio, timer, navigasi, auto-save, submit) |
-| **Anti-Cheat** | ✅ Full (fullscreen, tab switch, right-click, violation modal) |
-| **Hasil Ujian** | ✅ Score breakdown per section + fetch dedicated endpoint |
-| **API Integration** | ✅ 100% real fetching |
-| **Server Middleware** | ✅ `middleware.ts` aktif |
-| **Global UI States** | ✅ `loading.tsx`, `error.tsx`, `not-found.tsx` |
-| **E2E Tests** | ✅ File lengkap (Playwright) - eksekusi & refinement ditunda |
+| **Auth Flow** | DONE - register, login, session, logout |
+| **Payment Proof** | DONE - upload file dan history real API, limit 5MB sesuai BE terbaru |
+| **Dashboard** | DONE - real data dari profile, approval, session, active attempt, results |
+| **Exam Engine** | DONE - start/resume, question, answer save, doubtful, navigate, heartbeat, submit |
+| **Audio Player** | DONE - log audio-play memakai `question_id` sesuai BE |
+| **Anti-Cheat** | DONE - fullscreen, tab switch, right-click/copy prevention, violation logging memakai `violation_type` |
+| **Hasil Ujian** | DONE - total score dan answer stats, tanpa section score karena BE sudah drop section score columns |
+| **API Integration** | DONE - adapter response ada di `lib/auth-api.ts` untuk menormalkan response BE terbaru |
+| **Server Middleware** | DONE - `middleware.ts` aktif untuk protected route berbasis cookie token |
+| **Global UI States** | DONE - `loading.tsx`, `error.tsx`, `not-found.tsx` |
+| **E2E Tests** | PARTIAL - file Playwright tersedia, eksekusi manual/E2E terakhir belum dijalankan ulang |
 
 ---
 
-## Yang Sudah Selesai ✅
+## Yang Sudah Selesai
 
 ### 1. Environment dan API Client
-- ✅ `NEXT_PUBLIC_API_BASE_URL` dengan fallback ke `http://localhost:8000/api`
-- ✅ `apiRequest` support JSON dan FormData
-- ✅ Token participant di `localStorage` + **sync ke cookie** untuk middleware
-- ✅ Interceptor: 401 redirect login, 403 pending redirect waiting-approval, 422 field errors
-- ✅ Typed wrappers semua endpoint ada di `lib/auth-api.ts`
+
+- `NEXT_PUBLIC_API_BASE_URL` dengan fallback ke `http://localhost:8000/api`.
+- `apiRequest` support JSON dan FormData.
+- Token participant disimpan di `localStorage` dan disinkronkan ke cookie untuk middleware.
+- Interceptor behavior:
+  - 401 clear token dan redirect login.
+  - 403 redirect waiting approval hanya untuk error status akun, bukan semua error exam.
+  - 422 field errors dinormalisasi.
+- Typed wrappers dan adapter endpoint ada di `lib/auth-api.ts`.
+- Adapter response terbaru sudah menangani:
+  - `startExam`
+  - `resumeExam`
+  - `getQuestion`
+  - `submitExam`
+  - `getAttemptResult`
+  - `getResultHistory`
 
 ### 2. Auth Pages
-- ✅ Login real API dengan loading state dan disabled submit
-- ✅ Register real API dengan validasi field
-- ✅ Role check (hanya participant boleh login)
-- ✅ Account status redirect (pending → waiting-approval)
-- ✅ Logout participant
+
+- Login real API ke `POST /api/login`.
+- Register real API ke `POST /api/register`.
+- Loading state dan disabled submit.
+- Role check: hanya `participant` yang boleh masuk FE peserta.
+- Account status redirect ke waiting approval.
+- Logout participant.
+- Validasi register mengikuti BE terbaru:
+  - `name`
+  - `email`
+  - `password`
+  - `password_confirmation`
+  - `phone` 11-13 digit
+  - `institution`
+
+Catatan: `exam_type` tidak dikirim dari FE karena BE `RegisterRequest` terbaru tidak menerima field tersebut.
 
 ### 3. Payment Proof Peserta
-- ✅ Page `/payment-proof` untuk upload dan riwayat
-- ✅ Form fields: file, amount, payment_date
-- ✅ Validasi file type (JPG/PNG/PDF) dan **size max 2MB** (sesuai BE limit)
-- ✅ History dengan status dan rejection_reason
+
+- Page `/payment-proof` untuk upload dan history.
+- Form upload sekarang hanya mengirim:
+  - `file`
+- Field lama `amount` dan `payment_date` sudah tidak dipakai karena BE migration terbaru menghapus kolom tersebut.
+- Validasi FE:
+  - JPG/JPEG/PNG/PDF
+  - max 5MB, sesuai BE `max:5120`
+  - required file
+- History menampilkan:
+  - `file_name`
+  - `status`
+  - `created_at`
+  - `rejection_reason` jika ada
+- CTA upload ulang tersedia saat proof ditolak.
 
 ### 4. Waiting Approval / Account Status
-- ✅ Fetch `GET /api/me`
-- ✅ Polling status akun setiap 30 detik
-- ✅ Tampilan sesuai status (pending/rejected/active)
+
+- Fetch status via `GET /api/me`.
+- Polling status akun setiap 30 detik.
+- Tampilan mengikuti status:
+  - pending
+  - rejected
+  - active
+- Jika status berubah menjadi active, user diberi notifikasi dan redirect countdown ke dashboard.
 
 ### 5. Dashboard Peserta
-- ✅ Fetch real data: profile, test-approvals, exam-sessions, active-attempt, results
-- ✅ Tombol start/resume mengikuti state API
-- ✅ Empty states
+
+- Fetch real data:
+  - `GET /api/my/profile`
+  - `GET /api/my/test-approvals`
+  - `GET /api/my/exam-sessions`
+  - `GET /api/my/active-attempt`
+  - `GET /api/my/results`
+- Tombol start/resume mengikuti state API.
+- Empty state untuk data kosong.
+- Dashboard result visibility mengikuti `show_result_to_user`.
+- Data result sudah dinormalisasi agar cocok dengan response `ExamResultResource` terbaru.
 
 ### 6. Exam Detail dan Instruction
-- ✅ Detail session dari backend
-- ✅ Start exam dengan validasi
-- ✅ Error handling bisnis
+
+- Detail session dari backend via daftar session peserta.
+- Start exam real API ke `POST /api/exam-sessions/{session_id}/start`.
+- Jika sudah ada active attempt, FE redirect resume ke `/exam?attempt_id=...`.
+- Error bisnis ditampilkan ke user.
 
 ### 7. Exam Engine
-- ✅ Load active attempt (start/resume)
-- ✅ Load question by number
-- ✅ Render soal dari API (stem_html, image, audio, options)
-- ✅ Save answer ke backend
-- ✅ Mark doubtful
-- ✅ Navigate soal
-- ✅ Timer dari `remaining_seconds` backend
-- ✅ Heartbeat berkala
-- ✅ Submit dengan konfirmasi
-- ✅ Auto-resume saat refresh
-- ✅ Auto-submit saat timer habis
+
+- Load active attempt dari:
+  - `GET /api/my/active-attempt`
+  - query `attempt_id`
+- Load question via `GET /api/exam-attempts/{attempt}/questions/{number}`.
+- Adapter question terbaru membaca struktur BE:
+  - `display_number`
+  - `snapshot.stem_html`
+  - `snapshot.image_url`
+  - `snapshot.audio_url`
+  - `snapshot.audio_max_play_count`
+  - `options`
+  - `selected_option_id`
+  - `is_doubtful`
+- Save answer ke `POST /api/exam-attempts/{attempt}/answers`.
+- Mark doubtful ke `POST /api/exam-attempts/{attempt}/mark-doubt`.
+- Navigate ke `POST /api/exam-attempts/{attempt}/navigate`.
+- Timer dari `remaining_seconds`.
+- Heartbeat berkala.
+- Submit final dengan confirmation modal.
+- Auto-resume saat refresh.
+- Auto-submit saat timer habis.
 
 ### 8. Audio Player
-- ✅ Render audio dari `audio_url`
-- ✅ Play count limit dari backend
-- ✅ Tampilan max play dan remaining play
-- ✅ Log audio-play ke backend (`POST /audio-play`)
 
-### 9. Anti-Cheat Client Events (P1 - Lengkap)
-- ✅ **Fullscreen enforcement** — request fullscreen saat exam start, detect exit
-- ✅ **Tab switch detection** — visibility change, kirim violation
-- ✅ **Disable right click/copy** — di area exam
-- ✅ **Warning modal violation** — saat threshold terlewati
-- ✅ **Route guard saat exam aktif** — cegah keluar tanpa konfirmasi (`beforeunload`)
-- ✅ Violation logging endpoint
+- Render audio dari `audio_url`.
+- Play count limit dari backend.
+- Log audio-play ke:
+  - `POST /api/exam-attempts/{attempt}/audio-play`
+- Payload sudah disesuaikan dengan BE terbaru:
+
+```json
+{
+  "question_id": 123
+}
+```
+
+- Response BE `max_play_count` dinormalisasi menjadi `max_play` untuk UI.
+
+### 9. Anti-Cheat Client Events
+
+- Fullscreen enforcement.
+- Detect fullscreen exit.
+- Detect visibility change/tab switch.
+- Disable right click/copy/cut/paste/selectstart di area exam.
+- Violation logging ke:
+  - `POST /api/exam-attempts/{attempt}/violations`
+- Payload sudah disesuaikan dengan BE terbaru:
+
+```json
+{
+  "violation_type": "tab_switch",
+  "severity": "medium"
+}
+```
+
+- Warning modal muncul saat threshold terlewati.
+- Auto-submit menggunakan fallback FE karena endpoint public settings belum tersedia untuk peserta.
 
 ### 10. Exam Completed, Result, History
-- ✅ Completed page membaca submit response
-- ✅ Result visibility mengikuti `show_result_to_user`
-- ✅ **Detail skor pakai endpoint dedicated** `GET /exam-attempts/{id}/result` (bukan fetch all + filter)
-- ✅ History fetch dari API
-- ✅ Score breakdown: listening, structure, reading, benar/salah/tidak dijawab
+
+- Completed page membaca submit response melalui adapter.
+- Result visibility mengikuti:
+  - `show_result_to_user`
+  - `show_result`
+- Detail skor memakai endpoint dedicated:
+  - `GET /api/exam-attempts/{attempt}/result`
+- History fetch dari:
+  - `GET /api/my/results`
+- History detail link memakai `exam_attempt_id`, bukan `result.id`.
+- UI skor per-section sudah dihapus karena BE migration terbaru menghapus:
+  - `listening_score`
+  - `structure_score`
+  - `reading_score`
+- UI hasil sekarang menampilkan:
+  - total score
+  - correct count
+  - wrong count
+  - unanswered count
 
 ### 11. Profile Page
-- ✅ Fetch `GET /api/my/profile`
-- ✅ Tampil semua field user
+
+- Fetch `GET /api/my/profile`.
+- Menampilkan:
+  - name
+  - email
+  - phone
+  - institution
+  - account_status
+
+Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profile`.
 
 ### 12. Route Guard
-- ✅ **Server-side middleware** (`middleware.ts`) - redirect berbasis cookie
-- ✅ Client-side `AuthGuard` component
-- ✅ Redirect authenticated users dari login/register
+
+- Public route:
+  - `/`
+  - `/login`
+  - `/register`
+  - `/forgot-password`
+  - `/waiting-approval`
+  - `/panduan`
+- Auth route:
+  - `/dashboard`
+  - `/profile`
+  - `/payment-proof`
+  - `/exam/*`
+- Middleware redirect user tanpa token ke login.
+- Client `AuthGuard` tetap memvalidasi session via API.
+- User non-participant diarahkan keluar dari FE peserta.
 
 ### 13. Global UI States
-- ✅ `app/loading.tsx` - Loading spinner global
-- ✅ `app/error.tsx` - Error boundary dengan retry & dashboard link
-- ✅ `app/not-found.tsx` - Halaman 404 dengan navigasi
 
-### 14. Polish (P2)
-- ✅ Loading skeleton (Dashboard, History, Exam, Profile)
-- ✅ State management dengan @tanstack/react-query
-- ✅ Responsive mobile exam layout
-- ✅ Accessibility (focus state, aria-labels, keyboard navigation)
-- ✅ Lucide icons di dashboard & profile
+- `app/loading.tsx`.
+- `app/error.tsx`.
+- `app/not-found.tsx`.
 
-### 15. E2E Tests (Playwright)
-- ✅ `e2e/auth.spec.ts`
-- ✅ `e2e/login.spec.ts`
-- ✅ `e2e/protected-routes.spec.ts`
-- ✅ `e2e/dashboard.spec.ts`
-- ✅ `e2e/exam.spec.ts`
-- ✅ `playwright.config.ts`
+### 14. Polish
+
+- Loading skeleton:
+  - dashboard
+  - history
+  - exam
+  - profile
+- State management memakai `@tanstack/react-query`.
+- Responsive mobile layout untuk exam.
+- Accessibility dasar:
+  - focus states
+  - aria dialog
+  - keyboard-friendly controls
+- Lucide icons dipakai di dashboard/profile/payment.
+
+### 15. Testing dan QA
+
+- E2E Playwright files tersedia:
+  - `e2e/auth.spec.ts`
+  - `e2e/login.spec.ts`
+  - `e2e/protected-routes.spec.ts`
+  - `e2e/dashboard.spec.ts`
+  - `e2e/exam.spec.ts`
+  - `playwright.config.ts`
+- Testing terakhir yang sudah dijalankan pada FE:
+  - `npx tsc --noEmit --pretty false` - PASS
+  - `npm run lint` - PASS
+  - `npm run build` - PASS
+- Smoke test browser/manual belum dijalankan ulang setelah patch adapter 2026-05-12.
 
 ---
 
-## Yang Masih Belum / Perlu Perbaikan 🔧
+## Yang Masih Belum / Perlu Perbaikan
 
 ### P1 - Exam Reliability
+
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Fullscreen enforcement** | ✅ Selesai | Request fullscreen saat exam start, detect exit |
-| 2 | **Tab switch detection** | ✅ Selesai | Detect visibility change, kirim violation |
-| 3 | **Disable right click/copy** | ✅ Selesai | Di area exam |
-| 4 | **Warning modal violation** | ✅ Selesai | Saat threshold terlewati |
-| 5 | **Route guard saat exam aktif** | ✅ Selesai | Cegah keluar tanpa konfirmasi |
-| 6 | **Auto-submit on violation limit** | ✅ Selesai (FE ready) | FE sudah integrasi `auto_submit_on_violation_limit` dengan fallback default `true`. Aktif saat limit terlampaui. Menunggu BE expose endpoint publik settings. |
-| 7 | **Dynamic violation limits** | ✅ Selesai (FE ready) | `tabSwitchCount` & `fullscreenExitCount` terpisah, tidak lagi hardcode. Limits dynamic dari settings dengan fallback default (`max_tab_switch: 3`, `max_fullscreen_exit: 3`). Menunggu BE expose endpoint publik settings. |
+| 1 | Fullscreen enforcement | DONE | Request fullscreen saat exam start, detect exit |
+| 2 | Tab switch detection | DONE | Detect visibility change, kirim violation |
+| 3 | Disable right click/copy | DONE | Di area exam |
+| 4 | Warning modal violation | DONE | Saat threshold terlewati |
+| 5 | Route guard saat exam aktif | DONE | Cegah keluar tanpa konfirmasi |
+| 6 | Auto-submit on violation limit | FE READY | Fallback default aktif, menunggu public settings BE untuk nilai real |
+| 7 | Dynamic violation limits | FE READY | FE memanggil `/settings/exam`, tapi BE belum expose endpoint peserta |
 
 ### P2 - Polish & Optimization
-| # | Fitur | Status | Catatan |
-|---|-------|--------|---------|
-| 1 | **Loading skeleton** | ✅ Selesai | Dashboard, history, exam, profile |
-| 2 | **State management** | ✅ Selesai | Menggunakan @tanstack/react-query |
-| 3 | **E2E tests execution** | ✅ Selesai | Semua spec di-refine: helpers.ts baru, auth/login/protected-routes/dashboard/exam spec diperbarui. playwright.config.ts diupdate dengan timeout, screenshot, video on failure. Script `test:e2e:ui`, `test:e2e:headed`, `test:e2e:report` ditambahkan di package.json |
-| 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
-| 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
-| 6 | **Score detail fetch** | ✅ Selesai | Refactor ke `getAttemptResult()` dedicated endpoint |
 
-### P3 - Backend Integration & Settings (NEW — sinkron BE 10 Mei 2026)
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Global Exam Settings Integration** | ⚠️ Partial (FE ready) | FE sudah baca settings dinamis saat start exam (`getExamSettings()` + `ExamSettings` type + fallback default). Menunggu BE expose endpoint publik `/settings/exam` untuk peserta. |
-| 2 | **Media Proxy / Signed URL** | ✅ Selesai | FE sudah pakai `image_url`/`audio_url` dari response API. Ditambah `onError` handler di img tag untuk handle signed URL expired/invalid. |
-| 3 | **Account Status Notification** | ✅ Selesai | `AccountStatusWatcher` component di-mount di root layout. Polling `GET /api/me` setiap 30 detik. Deteksi perubahan status (pending→active/rejected/suspended). Banner notifikasi floating + auto-redirect countdown 5 detik ke dashboard. Tidak polling saat di halaman `/exam`. |
-| 4 | **Show Result to User enforcement** | ✅ Selesai | History, Dashboard, dan Completed page sekarang fully respect `show_result_to_user` dari `ExamSession` / `AttemptResult`. |
+| 1 | Loading skeleton | DONE | Dashboard, history, exam, profile |
+| 2 | State management | DONE | `@tanstack/react-query` |
+| 3 | E2E tests execution | PARTIAL | File ada, perlu rerun setelah patch adapter terbaru |
+| 4 | Responsive mobile exam | DONE | Layout soal dan navigasi grid |
+| 5 | Accessibility | DONE | Focus state, aria, keyboard navigation dasar |
+| 6 | Score detail fetch | DONE | `getAttemptResult()` dedicated endpoint |
+
+### P3 - Backend Integration & Settings
+
+| # | Fitur | Status | Catatan |
+|---|-------|--------|---------|
+| 1 | Global Exam Settings Integration | PARTIAL | FE ready, BE baru punya `/admin/settings/exam`; peserta belum punya `/settings/exam` |
+| 2 | Media Proxy / Signed URL | DONE | FE memakai `image_url`/`audio_url`, ada `onError` handler |
+| 3 | Account Status Notification | DONE | Polling `GET /api/me` setiap 30 detik, tidak polling saat exam |
+| 4 | Show Result to User enforcement | DONE | History, Dashboard, Completed, Score mengikuti visibility |
 
 ### P4 - Missing Features / Placeholder
+
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Forgot Password** | ⚠️ Placeholder | Page ada tapi hanya static info. BE belum sediakan endpoint reset password |
-| 2 | **Edit Profile** | ❌ Belum | Belum ada page & endpoint `PATCH /my/profile` |
-| 3 | **Exam Type di Register** | ✅ Selesai | Field `exam_type` sudah masuk ke `RegisterPayload` dan dikirim ke API saat submit form register. |
+| 1 | Forgot Password | PLACEHOLDER | BE belum menyediakan endpoint reset password |
+| 2 | Edit Profile | WAITING BE | Belum ada endpoint `PATCH /my/profile` |
+| 3 | Exam Type di Register | NOT ACTIVE | BE terbaru tidak menerima `exam_type`, jadi FE tidak mengirim field ini |
 
 ### P5 - Client Feedback Refinement
+
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Validasi No. WhatsApp** | ✅ Selesai | Tambahkan validasi min:11 dan max:13 digit pada `RegisterForm.tsx` |
-| 2 | **Sederhanakan Upload Bukti Bayar** | ✅ Selesai | Hapus field `nominal` dan `tanggal bayar` dari `PaymentProofForm.tsx`, hanya sisakan file upload |
+| 1 | Validasi No. WhatsApp | DONE | FE validasi 11-13 digit, sama dengan BE |
+| 2 | Sederhanakan Upload Bukti Bayar | DONE | Hanya upload file; `amount` dan `payment_date` dihapus |
 
 ---
 
-## Perubahan Terbaru (10 Mei 2026)
+## Perubahan Terbaru
 
-### ✅ Committed
-- **Image upload limit** 5MB → 2MB (sesuai BE `max:2048`)
-- **Score detail fetch** refactor dari fetch all + client-side filter ke dedicated endpoint `GET /exam-attempts/{id}/result`
-- Query param history → score berubah dari `result_id` ke `attempt_id`
-- **Exam Type di Register** — `RegisterPayload` ditambah `exam_type`, form register sekarang mengirim field ini ke BE
-- **Dynamic Violation Limits & Auto-submit** — `ExamSettings` type + `getExamSettings()` API wrapper. Exam page refactor: `tabSwitchCount` & `fullscreenExitCount` terpisah, auto-submit saat limit terlampaui, modal text dynamic
-- **Show Result Enforcement** — History page & DashboardContent sekarang cek `exam_session?.show_result_to_user` sebelum tampilkan skor/tombol detail
-- **Media Proxy / Signed URL** — `onError` handler di img tag exam page untuk handle expired signed URL
+### 12 Mei 2026
 
-### 📋 Next Tasks (Rekomendasi Urutan Pengerjaan)
-1. **BE: Expose Global Exam Settings ke Peserta** — FE sudah 100% siap. BE perlu buat endpoint publik agar FE bisa pakai nilai real dari admin.
-2. **Edit Profile** (P4 #2) — butuh BE endpoint `PATCH /my/profile` + page/form di FE
-3. **Forgot Password** (P4 #1) — butuh BE endpoint reset password
+- Sinkron FE dengan BE terbaru setelah push backend/admin.
+- Payment proof limit disamakan menjadi 5MB sesuai `StorePaymentProofRequest` BE (`max:5120`).
+- Payment proof form tetap hanya mengirim `file`; field `amount` dan `payment_date` tidak lagi dikirim.
+- Menambahkan adapter response di `lib/auth-api.ts` untuk:
+  - `startExam`
+  - `resumeExam`
+  - `getQuestion`
+  - `submitExam`
+  - `getAttemptResult`
+  - `getResultHistory`
+- Adapter question menormalisasi response BE terbaru dari `snapshot.*` ke shape UI yang dipakai exam page.
+- Audio play payload diubah dari `question_number` menjadi `question_id`.
+- Violation payload diubah dari `type` menjadi `violation_type`.
+- History score link diubah memakai `exam_attempt_id`.
+- UI skor per-section peserta dihapus karena BE sudah drop section score columns.
+- Unused variables dibersihkan sehingga lint kembali pass.
+- Verifikasi:
+  - `npx tsc --noEmit --pretty false` - PASS
+  - `npm run lint` - PASS
+  - `npm run build` - PASS
+
+### Catatan Dari BE/Admin Terbaru
+
+- BE punya media proxy `GET /api/media/{path}` dan signed URL untuk `image_url` / `audio_url`.
+- BE settings exam saat ini tersedia di admin route:
+  - `GET /api/admin/settings/exam`
+  - `PATCH /api/admin/settings/exam`
+- Belum ada public participant route:
+  - `GET /api/settings/exam`
+- BE result resource terbaru tidak mengirim section score.
+- Admin repo masih punya beberapa UI/typing lama terkait section score/section type. Itu di luar scope FE peserta, tetapi bisa memengaruhi konsistensi data admin.
+
+---
+
+## Next Tasks
+
+1. **Manual smoke test FE peserta**
+   - login
+   - dashboard
+   - payment proof
+   - waiting approval
+   - start/resume exam
+   - get question
+   - save answer
+   - audio play
+   - violation logging
+   - submit
+   - completed/history/score
+
+2. **BE: expose public exam settings untuk peserta**
+   - Endpoint yang dibutuhkan FE:
+     - `GET /api/settings/exam`
+   - Selama belum ada endpoint ini, FE memakai fallback default.
+
+3. **Edit Profile**
+   - Menunggu endpoint BE:
+     - `PATCH /api/my/profile`
+
+4. **Forgot Password**
+   - Menunggu endpoint BE untuk reset password.
 
 ---
 
 ## Prioritas Sprint
 
-### P0 - Integrasi Wajib ✅ DONE
-- ✅ Login real API
-- ✅ Register real API
-- ✅ Route guard (server + client)
-- ✅ Dashboard real API
-- ✅ Upload payment proof
-- ✅ Start/resume exam
-- ✅ Get question/save answer/submit
+### P0 - Integrasi Wajib - DONE
 
-### P1 - Exam Reliability ✅ DONE
-- ✅ Fullscreen + tab switch detection
-- ✅ Violation logging client events
-- ✅ Result visibility
-- ✅ Loading skeleton
-- ✅ Auto-submit on violation limit (FE ready, fallback default aktif)
-- ✅ Dynamic max tab/fullscreen limit (FE ready, fallback default)
+- Login real API.
+- Register real API.
+- Route guard server + client.
+- Dashboard real API.
+- Upload payment proof.
+- Start/resume exam.
+- Get question/save answer/submit.
 
-### P2 - Polish ✅ DONE
-- ✅ Better UX for retake
-- ✅ Richer history and profile
-- ✅ State management layer
-- ✅ Responsive & accessibility
-- ✅ E2E tests execution & refinement (Selesai — semua spec di-refine, config diupdate)
+### P1 - Exam Reliability - DONE / FE READY
+
+- Fullscreen + tab switch detection.
+- Violation logging client events.
+- Result visibility.
+- Loading skeleton.
+- Auto-submit on violation limit, FE fallback aktif.
+- Dynamic max tab/fullscreen limit, FE ready tetapi menunggu public settings route.
+
+### P2 - Polish - MOSTLY DONE
+
+- Better UX for retake.
+- Richer history and profile.
+- State management layer.
+- Responsive and accessibility.
+- E2E files tersedia, perlu rerun.
 
 ### P3 - Backend Integration & Settings
-- ⚠️ Global exam settings integration (FE ready, menunggu BE expose endpoint publik)
-- ✅ Media proxy signed URL authentication
-- ✅ Real-time/polling notifikasi status akun global (AccountStatusWatcher)
-- ✅ Show result enforcement
+
+- Global exam settings integration: FE ready, menunggu BE public endpoint.
+- Media proxy / signed URL authentication: done.
+- Real-time/polling notifikasi status akun: done.
+- Show result enforcement: done.
 
 ### P4 - Missing Features / Nice to Have
-- ⚠️ Forgot password (menunggu BE)
-- ❌ Edit profile (menunggu BE)
-- ✅ Connect exam_type saat register
 
-### P5 - Client Feedback Refinement ✅ DONE
-- ✅ Validasi No. WhatsApp
-- ✅ Sederhanakan Upload Bukti Bayar
+- Forgot password: menunggu BE.
+- Edit profile: menunggu BE.
+- Exam type register: tidak aktif karena tidak ada di kontrak BE terbaru.
+
+### P5 - Client Feedback Refinement - DONE
+
+- Validasi No. WhatsApp.
+- Upload bukti bayar disederhanakan.
