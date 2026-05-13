@@ -87,7 +87,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ CRUD lengkap
 - ✅ Questions count
 - ✅ **Warning bank dipakai aktif** — tampil package yang menggunakan bank saat detail
-- **Note:** Question bank now has `section_type` metadata (values include `fahm_al_maqru`, `fahm_al_kitabah`, `fahm_al_masmu`). Admin UI should surface `section_type` in create/edit and detail views.
+- ✅ **Section Type Metadata** — form create/edit, list, dan detail Question Bank menampilkan `section_type` dengan opsi final `fahm_al_maqru`, `fahm_al_kitabah`, dan `fahm_al_masmu`.
 
 ### 9. Question Management
 - ✅ CRUD dengan multipart
@@ -104,7 +104,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ Validasi stok soal dari backend
 - ✅ **Kolom `section` sudah dihapus** dari `bank-mapping-editor.tsx` — kolom yang tersisa: Bank Soal, Jumlah, Urutan, Action
 - ✅ **Input Jumlah Soal** — field dinormalisasi minimal `1` saat blur dan saat serialize `banks_json`
-- **Note:** If a bank has `section_type = fahm_al_masmu`, the backend enforces no shuffle for that bank. UI should show an indicator and disable or explain shuffle behavior where applicable.
+- ✅ **Indikator No Shuffle Fahm al-Masmu** — bank mapping menampilkan label section dan badge `No shuffle` untuk `section_type = fahm_al_masmu`.
 
 ### 11. Exam Session Management
 - ✅ List dengan filter status/date
@@ -204,10 +204,8 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 
 ## Yang Masih Belum / Perlu Perbaikan 🔧
 
-- Tambahkan field `section_type` di form create/edit Question Bank dan tampilkan di detail.
-- Tampilkan `section_type` di Exam Package Builder (bank list) dan beri indikator khusus untuk `fahm_al_masmu`.
-- Jika ada kontrol shuffle per bank, nonaktifkan atau beri tooltip bahwa server akan memaksa no-shuffle untuk bank `fahm_al_masmu`.
-- Update E2E admin untuk memastikan bank `fahm_al_masmu` ditandai no-shuffle di UI.
+- Tidak ada task admin fungsional yang masih terbuka di breakdown ini.
+- Catatan testing: `cbt-admin` belum memiliki suite E2E resmi di repo. Validasi task `section_type` saat ini dilakukan via `npm run build` dan `npm run lint`; skenario manual/UAT yang perlu dicek adalah create/edit Question Bank dengan `fahm_al_masmu`, lalu pastikan Exam Package Builder menampilkan badge `No shuffle`.
 
 ---
 
