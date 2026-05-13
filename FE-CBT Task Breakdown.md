@@ -319,6 +319,7 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 - Exam page mulai dipecah ke komponen kecil; `ExamHeader` sudah diekstrak dari `app/exam/page.tsx`.
 - Resume exam diperbaiki agar initial question yang dimuat mengikuti `current_question_number` dari backend, bukan selalu state awal soal 1.
 - Audio play tidak lagi fallback dari `question_id` ke `attempt_question.id`; jika backend tidak mengirim `question_id`, FE menampilkan error aman dan tidak mengirim payload yang salah.
+- BE menambahkan `section_type` pada question bank (termasuk `fahm_al_maqru`, `fahm_al_kitabah`, `fahm_al_masmu`) dan server akan menonaktifkan shuffle untuk bank dengan `section_type = fahm_al_masmu`.
 - E2E tests disesuaikan dengan kontrak terbaru:
   - register tidak lagi memakai `exam_type`
   - payment proof tidak lagi memakai `amount` dan `payment_date`

@@ -2,7 +2,15 @@
 
 Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo saat ini, dokumen existing di `cbt-documentation`, dan kontrak API yang sudah muncul di `be-cbt/API_DOCUMENTATION.md`.
 
-**Last Updated:** 2026-05-12 (rev. audit)
+**Last Updated:** 2026-05-13 (rev. audit)
+
+---
+
+## Perubahan Terbaru (2026-05-13)
+
+- ✅ Added `section_type` on `question_banks` (migration `2026_05_13_120000`) with additional Fahm section values.
+- ✅ Exam engine: if a bank has `section_type = fahm_al_masmu`, questions from that bank are not shuffled even when `shuffle_questions = true`.
+- ✅ API documentation updated to reflect `section_type` as question bank metadata.
 
 ---
 
@@ -57,9 +65,9 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 | **API Endpoints** | ✅ ~74 endpoint (admin + user) |
 | **Exam Engine** | ✅ Snapshot, randomisasi, timer, scoring |
 | **Payment Proof** | ✅ Upload, approve, reject + preview endpoint (schema: removed amount, payment_date) |
-| **Question API** | ✅ CRUD + validasi + bank sync (schema: removed question_type, difficulty_level, section_type) |
-| **Question Import** | ✅ CSV import + template download (tidak perlu section_type lagi) |
-| **Exam Package** | ✅ CRUD + bank sync tanpa section_type |
+| **Question API** | ✅ CRUD + validasi + bank sync (schema: removed `question_type`, `difficulty_level`; `section_type` now on `question_banks`) |
+| **Question Import** | ✅ CSV import + template download (target `question_bank_id`; `section_type` from bank) |
+| **Exam Package** | ✅ CRUD + bank sync (banks reference `question_bank_id`; `section_type` from bank metadata) |
 | **Exam Result** | ✅ Scoring hanya total_score (removed listening/structure/reading score) |
 | **Session Validation** | ✅ `date_format:H:i` untuk time |
 | **Feature Tests** | ✅ Test/factory schema lama sudah diupdate (section_type dan section score dibersihkan) |
@@ -248,24 +256,13 @@ Backend sudah memiliki fondasi Laravel API yang cukup lengkap:
 ## ⚠️ Item Yang Memerlukan Tindak Lanjut
 
 ### 1. Test Coverage Pending
-Tidak ada lagi test/factory aktif yang memakai kolom schema lama (`section_type`, `question_type`, `difficulty_level`, `listening_score`, `structure_score`, `reading_score`). Tindak lanjut yang masih relevan adalah menambah coverage khusus untuk default exam setting pada create package/session.
+Tidak ada lagi test/factory aktif yang memakai kolom schema lama (`section_type` pada `questions`/`exam_package_banks`, `question_type`, `difficulty_level`, `listening_score`, `structure_score`, `reading_score`). Tindak lanjut yang masih relevan adalah menambah coverage khusus untuk default exam setting pada create package/session.
 
 ### 2. Session `publish()` Tidak Ada Guard Transisi
 - **File:** `app/Http/Controllers/Api/Admin/ExamSessionController.php` baris 75–87
 - **Masalah:** Method `publish()` langsung update status ke `PUBLISHED` tanpa memanggil `canTransitionTo()`, sementara `close()`, `finish()`, dan `cancel()` sudah pakai guard.
 - **Dampak:** Session berstatus `FINISHED` atau `CANCELLED` bisa di-publish ulang.
 - **Fix:** Tambahkan guard sebelum update, contoh: `if (!$this->canTransitionTo($session->status, ExamSessionStatus::PUBLISHED)) { return $this->error(...); }`
-
-### 3. `API_DOCUMENTATION.md` Masih Menyebut `section_type`
-- **File:** `API_DOCUMENTATION.md` baris 193, 221, 247, 293, 306, 309
-- **Masalah:** Field `section_type` sudah dihapus dari schema via migration `2026_05_12_000000`, tetapi dokumentasi API masih mencantumkannya sebagai required field di CSV import dan endpoint question/package.
-- **Dampak:** Menyesatkan developer yang mengintegrasikan API.
-- **Fix:** Hapus semua referensi `section_type` dari `API_DOCUMENTATION.md` dan perbarui contoh payload CSV import.
-
-### 4. Belum Ada Endpoint Public Settings untuk Peserta
-- **File:** `routes/api.php`
-- **Masalah:** `GET /api/admin/settings/exam` hanya bisa diakses admin. FE peserta (`fe-cbt`) membutuhkan endpoint tanpa auth untuk membaca nilai `max_tab_switch` dan `max_fullscreen_exit`, sehingga saat ini FE menggunakan hardcode fallback (3/3).
-- **Fix:** Tambahkan route publik atau peserta: `GET /api/settings/exam` yang hanya mengembalikan field yang aman dibaca peserta (bukan semua setting admin).
 
 ---
 
