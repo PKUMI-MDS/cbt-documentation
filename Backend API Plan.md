@@ -1,5 +1,8 @@
 \# Backend API Plan - Laravel CBT
 
+> **Last Updated:** 14 Mei 2026  
+> **Postman Collection:** `CBT-TOAFL-API-Collection.postman_collection.json` (import-ready, 79 requests)
+
 
 
 \## Arsitektur Modul
@@ -324,7 +327,9 @@ Untuk error:
 
 \- POST `/api/exam-sessions/{session}/start`
 
-\- GET `/api/exam-attempts/{attempt}`
+\- GET `/api/exam-attempts/{attempt}/resume`
+
+\- GET `/api/exam-attempts/{attempt}/result`
 
 \- GET `/api/exam-attempts/{attempt}/questions/{number}`
 
@@ -366,6 +371,8 @@ Untuk error:
 
 \- GET `/api/admin/payment-proofs/{id}`
 
+\- GET `/api/admin/payment-proofs/{id}/preview`
+
 \- PATCH `/api/admin/payment-proofs/{id}/approve`
 
 \- PATCH `/api/admin/payment-proofs/{id}/reject`
@@ -384,6 +391,8 @@ Untuk error:
 
 \- POST `/api/admin/question-banks`
 
+\- GET `/api/admin/question-banks/{id}`
+
 \- PATCH `/api/admin/question-banks/{id}`
 
 \- DELETE `/api/admin/question-banks/{id}`
@@ -398,11 +407,17 @@ Untuk error:
 
 \- POST `/api/admin/questions`
 
+\- POST `/api/admin/questions/bulk`
+
 \- GET `/api/admin/questions/{id}`
 
 \- PATCH `/api/admin/questions/{id}`
 
 \- DELETE `/api/admin/questions/{id}`
+
+\- POST `/api/admin/questions/import`
+
+\- GET `/api/admin/questions/import/template`
 
 
 
@@ -436,6 +451,10 @@ Untuk error:
 
 \- PATCH `/api/admin/exam-sessions/{id}/close`
 
+\- PATCH `/api/admin/exam-sessions/{id}/finish`
+
+\- PATCH `/api/admin/exam-sessions/{id}/cancel`
+
 
 
 \## Admin Session Participant Assignment
@@ -463,6 +482,10 @@ Untuk error:
 \- GET `/api/admin/results`
 
 \- GET `/api/admin/violations`
+
+\- GET `/api/admin/activity-logs`
+
+\- GET `/api/admin/analytics`
 
 \- GET `/api/admin/export/results`
 
