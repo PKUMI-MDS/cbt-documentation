@@ -2,7 +2,33 @@
 
 Dokumen ini adalah breakdown pekerjaan backend `be-cbt` berdasarkan kondisi repo saat ini, dokumen existing di `cbt-documentation`, dan kontrak API yang sudah muncul di `be-cbt/API_DOCUMENTATION.md`.
 
-**Last Updated:** 2026-05-13 (rev. audit)
+**Last Updated:** 2026-05-14 (backend hardening & new endpoints)
+
+---
+
+## Perubahan Terbaru (2026-05-14) — Backend Security & Feature Hardening
+
+### Security
+- ✅ **Rate limiting** untuk auth routes: `POST /api/register` dan `POST /api/login` dilindungi throttle `10 req/menit` per IP.
+- ✅ **Refactor ResponseFormatter**: menghapus static mutable state `$response` agar tidak bocor antar-request di long-running process (Octane/CLI). Sekarang return array baru setiap pemanggilan.
+
+### Fitur Baru
+- ✅ **Public exam settings endpoint**: `GET /api/settings/exam` tanpa auth, return safe defaults (duration, shuffle, tab switch limit, fullscreen limit, auto-submit flag). Dibutuhkan FE-CBT untuk menghindari hardcoded violation limits.
+- ✅ **Forgot password**: `POST /api/forgot-password` — generate token, kirim email (menggunakan token hash), return generic success message untuk mencegah email enumeration.
+- ✅ **Reset password**: `POST /api/reset-password` — validasi token (60 menit expiry), update password, invalidate semua Sanctum token & user sessions.
+- ✅ **Edit profile**: `PATCH /api/my/profile` — update `name`, `email`, `phone`, `institution`, `address` dengan validasi email unique (ignore current user).
+
+### Performance
+- ✅ **Fix N+1 queries** di `ExamAttemptDetailResource::toArray()` — `current_question` sekarang menggunakan collection yang sudah di-load (`whenLoaded`) alih-alih query baru.
+- ✅ **Fix N+1 queries** di `ScoringService::calculateAndStore()` — tambah `loadMissing(['examAttemptQuestions', 'examAnswers'])` sebelum iterasi.
+- ✅ **Eager load** di `ExamController::start()` — load `examAttemptQuestions.question.questionOptions` dan `examAnswers` sebelum return resource.
+- ✅ **Eager load** di `ExamController::resume()` — `currentQuestion` diambil dari collection yang sudah di-load.
+
+### Tests
+- ✅ **Feature test** `PublicSettingsTest` — validasi public endpoint return safe defaults dan accessible tanpa auth.
+- ✅ **Feature test** `ForgotPasswordTest` — validasi create token, unknown email generic response, valid/invalid/expired token reset.
+- ✅ **Feature test** `ProfileUpdateTest` — validasi update profil, email uniqueness, guest blocked.
+- ✅ **Full test suite**: 85 passed, 1 skipped.
 
 ---
 

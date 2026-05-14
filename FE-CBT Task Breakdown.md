@@ -202,7 +202,7 @@ Catatan: `exam_type` tidak dikirim dari FE karena BE `RegisterRequest` terbaru t
   - institution
   - account_status
 
-Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profile`.
+Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE tinggal integrate.
 
 ### 12. Route Guard
 
@@ -271,8 +271,8 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 | 3 | Disable right click/copy | DONE | Di area exam |
 | 4 | Warning modal violation | DONE | Saat threshold terlewati |
 | 5 | Route guard saat exam aktif | DONE | Cegah keluar tanpa konfirmasi |
-| 6 | Auto-submit on violation limit | FE READY | Fallback default aktif, menunggu public settings BE untuk nilai real |
-| 7 | Dynamic violation limits | FE READY | FE memanggil `/settings/exam`, tapi BE belum expose endpoint peserta |
+| 6 | Auto-submit on violation limit | FE READY | Fallback default aktif, integrate `GET /api/settings/exam` untuk nilai real |
+| 7 | Dynamic violation limits | **BE DONE** | `GET /api/settings/exam` public tersedia — FE tinggal integrate |
 
 ### P2 - Polish & Optimization
 
@@ -289,7 +289,7 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | Global Exam Settings Integration | PARTIAL | FE ready, BE baru punya `/admin/settings/exam`; peserta belum punya `/settings/exam` |
+| 1 | Global Exam Settings Integration | **BE DONE** | `GET /api/settings/exam` public tersedia — FE tinggal integrate |
 | 2 | Media Proxy / Signed URL | DONE | FE memakai `image_url`/`audio_url`, ada `onError` handler |
 | 3 | Account Status Notification | DONE | Polling `GET /api/me` setiap 30 detik, tidak polling saat exam |
 | 4 | Show Result to User enforcement | DONE | History, Dashboard, Completed, Score mengikuti visibility |
@@ -298,8 +298,8 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | Forgot Password | PLACEHOLDER | BE belum menyediakan endpoint reset password |
-| 2 | Edit Profile | WAITING BE | Belum ada endpoint `PATCH /my/profile` |
+| 1 | Forgot Password | **BE READY** | `POST /forgot-password` dan `POST /reset-password` tersedia — FE tinggal integrate |
+| 2 | Edit Profile | **BE READY** | `PATCH /api/my/profile` tersedia — FE tinggal integrate |
 | 3 | Exam Type di Register | NOT ACTIVE | BE terbaru tidak menerima `exam_type`, jadi FE tidak mengirim field ini |
 
 ### P5 - Client Feedback Refinement
@@ -360,8 +360,8 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 - BE settings exam saat ini tersedia di admin route:
   - `GET /api/admin/settings/exam`
   - `PATCH /api/admin/settings/exam`
-- Belum ada public participant route:
-  - `GET /api/settings/exam`
+- ✅ Public participant route tersedia:
+  - `GET /api/settings/exam` (tanpa auth, return safe defaults)
 - BE result resource terbaru tidak mengirim section score.
 - Admin repo masih punya beberapa UI/typing lama terkait section score/section type. Itu di luar scope FE peserta, tetapi bisa memengaruhi konsistensi data admin.
 
@@ -370,16 +370,16 @@ Catatan: edit profile belum tersedia karena belum ada endpoint `PATCH /my/profil
 ## Next Tasks
 
 1. **BE: expose public exam settings untuk peserta**
-   - Endpoint yang dibutuhkan FE:
-     - `GET /api/settings/exam`
-   - Selama belum ada endpoint ini, FE memakai fallback default.
+   - ✅ **DONE** — `GET /api/settings/exam` tersedia tanpa auth.
+   - FE harus integrate untuk mengganti hardcoded violation limits.
 
 2. **Edit Profile**
-   - Menunggu endpoint BE:
-     - `PATCH /api/my/profile`
+   - ✅ **DONE di BE** — `PATCH /api/my/profile` tersedia.
+   - FE tinggal buat form edit profile dan hubungkan ke endpoint.
 
 3. **Forgot Password**
-   - Menunggu endpoint BE untuk reset password.
+   - ✅ **DONE di BE** — `POST /forgot-password` dan `POST /reset-password` tersedia.
+   - FE tinggal buat form forgot password dan reset password.
 
 4. **Lanjutan refactor exam page**
    - `ExamHeader` sudah diekstrak.

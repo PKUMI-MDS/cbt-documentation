@@ -288,13 +288,15 @@ Untuk error:
 
 \- POST `/api/register`
 
-\- POST `/api/payment-proofs`
-
 \- POST `/api/login`
 
-\- POST `/api/logout`
+\- POST `/api/forgot-password`
 
-\- GET `/api/me`
+\- POST `/api/reset-password`
+
+\- POST `/api/logout` *(auth required)*
+
+\- GET `/api/me` *(auth required)*
 
 
 
@@ -303,6 +305,8 @@ Untuk error:
 
 
 \- GET `/api/my/profile`
+
+\- PATCH `/api/my/profile`
 
 \- GET `/api/my/test-approvals`
 
@@ -467,6 +471,8 @@ Untuk error:
 \## Settings
 
 
+
+\- GET `/api/settings/exam` *(public, no auth)*
 
 \- GET `/api/admin/settings/exam`
 

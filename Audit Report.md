@@ -88,13 +88,18 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 
 ### 1.5 Temuan & Issues
 
-| Severity | Temuan | Lokasi | Rekomendasi |
-|---|---|---|---|
-| 🟡 Medium | Tidak ada endpoint public `GET /api/settings/exam` untuk peserta — FE-CBT terpaksa hardcode violation limits | `routes/api.php` | Expose endpoint read-only tanpa auth untuk config exam |
-| 🟡 Medium | Tidak ada unit test untuk Service layer | `app/Services/` | Tambah unit test untuk `ExamEngineService`, `ScoringService` |
-| 🟡 Medium | Test coverage untuk default exam setting saat create package/session belum ada | feature tests | Tambah skenario create dengan/tanpa field override |
-| 🟢 Minor | Hardcoded business rules di service (violation threshold, duration default) | beberapa service | Pindah ke config file terpisah |
-| 🟢 Minor | File upload tanpa virus scan | `app/Http/Controllers/` | Tambah virus scan sebelum simpan (pasca-MVP) |
+| Severity | Temuan | Lokasi | Rekomendasi | Status |
+|---|---|---|---|---|
+| ✅ DONE | Tidak ada endpoint public `GET /api/settings/exam` untuk peserta | `routes/api.php` | Expose endpoint read-only tanpa auth untuk config exam | **Done 14 Mei 2026** — `GET /api/settings/exam` public tersedia |
+| ✅ DONE | Forgot password & reset password endpoint tidak ada | `AuthController` | Tambah `POST /forgot-password` dan `POST /reset-password` | **Done 14 Mei 2026** |
+| ✅ DONE | Edit profil user (`PATCH /api/my/profile`) tidak ada | `DashboardController` | Tambah endpoint update profil dengan validasi email unique | **Done 14 Mei 2026** |
+| ✅ DONE | ResponseFormatter static mutable state | `app/Helpers/ResponseFormatter.php` | Refactor ke instance-based return untuk hindari state leak | **Done 14 Mei 2026** |
+| ✅ DONE | N+1 query di ExamAttemptDetailResource dan ScoringService | `app/Http/Resources/`, `app/Services/` | Eager load `examAttemptQuestions` sebelum iterasi | **Done 14 Mei 2026** |
+| 🟡 Medium | Tidak ada unit test untuk Service layer | `app/Services/` | Tambah unit test untuk `ExamEngineService`, `ScoringService` | Open |
+| 🟡 Medium | Test coverage untuk default exam setting saat create package/session belum ada | feature tests | Tambah skenario create dengan/tanpa field override | Open |
+| 🟡 Medium | Tidak ada rate limiting di auth routes | `routes/api.php` | Tambah throttle 10 req/menit untuk `/login` dan `/register` | **Done 14 Mei 2026** |
+| 🟢 Minor | Hardcoded business rules di service (violation threshold, duration default) | beberapa service | Pindah ke config file terpisah | Open |
+| 🟢 Minor | File upload tanpa virus scan | `app/Http/Controllers/` | Tambah virus scan sebelum simpan (pasca-MVP) | Open |
 
 ### 1.6 Fitur Belum Implemented (Planned)
 
@@ -157,18 +162,18 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 
 ### 2.5 Temuan & Issues
 
-| Severity | Temuan | Lokasi | Rekomendasi |
-|---|---|---|---|
-| 🔴 High | `exam/page.tsx` terlalu besar (762 baris) — satu komponen handle exam logic, anti-cheat, timer, violations, UI rendering | [`app/exam/page.tsx`](../fe-cbt/app/exam/page.tsx) | Split ke sub-components: `ExamHeader`, `QuestionNavigator`, `SubmitModal`, `AntiCheatGuard` |
-| 🔴 High | 8+ `useEffect` dengan dependency arrays kompleks, rawan race condition & infinite loop | [`app/exam/page.tsx`](../fe-cbt/app/exam/page.tsx) | Tambah ESLint `exhaustive-deps`, pertimbangkan `useReducer` untuk exam state machine |
-| 🟡 Medium | Violation limits hardcoded di FE (`max_tab_switch: 3`, `max_fullscreen_exit: 3`) karena endpoint public settings belum ada di BE | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Koordinasi dengan BE untuk expose `GET /api/settings/exam` tanpa auth |
-| 🟡 Medium | `AccountStatusWatcher` tetap polling setiap 30 detik saat user sedang dalam ujian | [`components/AccountStatusWatcher.tsx`](../fe-cbt/components/AccountStatusWatcher.tsx) | Pause polling saat exam active |
-| 🟡 Medium | Forgot password tidak functional — hanya placeholder | `app/forgot-password/` | Implementasi setelah BE siap |
-| 🟡 Medium | Profile page read-only — tidak bisa edit | `app/profile/` | Implementasi setelah `PATCH /api/my/profile` tersedia di BE |
-| 🟡 Medium | `question_id` fallback dengan `?? id` di audio play payload — bisa kirim data salah jika `question_id` null | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Pastikan BE selalu return `question_id` atau standardize ke satu field |
-| 🟢 Minor | ESLint disabled saat build (`eslintIgnoreDuringBuilds: true`) | `next.config.mjs` | Tetap jalankan `npm run lint` di CI/CD pipeline |
-| 🟢 Minor | E2E tests (Playwright) perlu di-run ulang setelah adapter patch terakhir | `e2e/` | Jalankan `npm run test:e2e` sebelum go-live |
-| 🟢 Minor | Tidak ada unit tests (Jest belum dikonfigurasi) | — | Tambah unit tests untuk normalizer & helper functions |
+| Severity | Temuan | Lokasi | Rekomendasi | Status |
+|---|---|---|---|---|
+| 🔴 High | `exam/page.tsx` terlalu besar (762 baris) — satu komponen handle exam logic, anti-cheat, timer, violations, UI rendering | [`app/exam/page.tsx`](../fe-cbt/app/exam/page.tsx) | Split ke sub-components: `ExamHeader`, `QuestionNavigator`, `SubmitModal`, `AntiCheatGuard` | Partial — `ExamHeader` sudah diekstrak |
+| 🔴 High | 8+ `useEffect` dengan dependency arrays kompleks, rawan race condition & infinite loop | [`app/exam/page.tsx`](../fe-cbt/app/exam/page.tsx) | Tambah ESLint `exhaustive-deps`, pertimbangkan `useReducer` untuk exam state machine | Partial |
+| ✅ DONE | Violation limits hardcoded di FE (`max_tab_switch: 3`, `max_fullscreen_exit: 3`) karena endpoint public settings belum ada di BE | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Koordinasi dengan BE untuk expose `GET /api/settings/exam` tanpa auth | **BE Done 14 Mei 2026** — FE bisa integrate `GET /api/settings/exam` |
+| 🟡 Medium | `AccountStatusWatcher` tetap polling setiap 30 detik saat user sedang dalam ujian | [`components/AccountStatusWatcher.tsx`](../fe-cbt/components/AccountStatusWatcher.tsx) | Pause polling saat exam active | Done — `/exam` dikecualikan |
+| ✅ READY | Forgot password tidak functional — hanya placeholder | `app/forgot-password/` | Implementasi setelah BE siap | **BE Ready 14 Mei 2026** — `POST /forgot-password` & `POST /reset-password` tersedia |
+| ✅ READY | Profile page read-only — tidak bisa edit | `app/profile/` | Implementasi setelah `PATCH /api/my/profile` tersedia di BE | **BE Ready 14 Mei 2026** — `PATCH /api/my/profile` tersedia |
+| 🟡 Medium | `question_id` fallback dengan `?? id` di audio play payload — bisa kirim data salah jika `question_id` null | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Pastikan BE selalu return `question_id` atau standardize ke satu field | Done — FE tidak lagi fallback |
+| 🟢 Minor | ESLint disabled saat build (`eslintIgnoreDuringBuilds: true`) | `next.config.mjs` | Tetap jalankan `npm run lint` di CI/CD pipeline | Open |
+| 🟢 Minor | E2E tests (Playwright) perlu di-run ulang setelah adapter patch terakhir | `e2e/` | Jalankan `npm run test:e2e` sebelum go-live | Open |
+| 🟢 Minor | Tidak ada unit tests (Jest belum dikonfigurasi) | — | Tambah unit tests untuk normalizer & helper functions | Open |
 
 ---
 
@@ -232,31 +237,31 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 
 ### 🔴 P0 — Segera (blocking / critical)
 
-| # | Tindakan | Project | Estimasi |
-|---|---|---|---|
-| 1 | Fix `as any` di analytics route — ganti dengan proper TypeScript type | cbt-admin | 15 menit |
-| 2 | Expose `GET /api/settings/exam` tanpa auth untuk peserta | be-cbt | 30 menit |
-| 3 | Run E2E tests (`npm run test:e2e`) untuk validasi setelah adapter patch | fe-cbt | 30 menit |
+| # | Tindakan | Project | Estimasi | Status |
+|---|---|---|---|---|
+| 1 | Fix `as any` di analytics route — ganti dengan proper TypeScript type | cbt-admin | 15 menit | Open |
+| 2 | Expose `GET /api/settings/exam` tanpa auth untuk peserta | be-cbt | 30 menit | **✅ Done 14 Mei 2026** |
+| 3 | Run E2E tests (`npm run test:e2e`) untuk validasi setelah adapter patch | fe-cbt | 30 menit | Open |
 
 ### 🟡 P1 — Short-term (sprint ini)
 
-| # | Tindakan | Project | Estimasi |
-|---|---|---|---|
-| 4 | Refactor `exam/page.tsx` — split ke sub-components | fe-cbt | 3–4 jam |
-| 5 | Perbaiki dependency arrays `useEffect` di exam page | fe-cbt | 2 jam |
-| 6 | Pause `AccountStatusWatcher` polling saat exam active | fe-cbt | 30 menit |
-| 7 | Tambah XSS sanitization untuk output TipTap HTML | cbt-admin | 1 jam |
-| 8 | Selesaikan P4 items: hapus field section/difficulty, fix CSV template download | cbt-admin | 2–3 jam |
+| # | Tindakan | Project | Estimasi | Status |
+|---|---|---|---|---|
+| 4 | Refactor `exam/page.tsx` — split ke sub-components | fe-cbt | 3–4 jam | Open |
+| 5 | Perbaiki dependency arrays `useEffect` di exam page | fe-cbt | 2 jam | Open |
+| 6 | Pause `AccountStatusWatcher` polling saat exam active | fe-cbt | 30 menit | ✅ Done |
+| 7 | Tambah XSS sanitization untuk output TipTap HTML | cbt-admin | 1 jam | ✅ Done |
+| 8 | Selesaikan P4 items: hapus field section/difficulty, fix CSV template download | cbt-admin | 2–3 jam | ✅ Done |
 
 ### 🟢 P2 — Medium-term (backlog)
 
-| # | Tindakan | Project | Estimasi |
-|---|---|---|---|
-| 9 | Implementasi forgot password + profile edit (setelah BE siap) | be-cbt + fe-cbt | 4–6 jam |
-| 10 | Split `admin-api.ts` by module | cbt-admin | 4 jam |
-| 11 | Tambah unit tests untuk BE service layer | be-cbt | 8 jam |
-| 12 | Tambah unit tests untuk FE normalizer & helper | fe-cbt | 3 jam |
-| 13 | Hardcoded business rules di BE service → pindah ke config | be-cbt | 2 jam |
+| # | Tindakan | Project | Estimasi | Status |
+|---|---|---|---|---|
+| 9 | Implementasi forgot password + profile edit (setelah BE siap) | be-cbt + fe-cbt | 4–6 jam | **BE Done 14 Mei 2026** — tinggal integrate di FE |
+| 10 | Split `admin-api.ts` by module | cbt-admin | 4 jam | ✅ Done |
+| 11 | Tambah unit tests untuk BE service layer | be-cbt | 8 jam | Open |
+| 12 | Tambah unit tests untuk FE normalizer & helper | fe-cbt | 3 jam | Open |
+| 13 | Hardcoded business rules di BE service → pindah ke config | be-cbt | 2 jam | Open |
 
 ### 🔵 P3 — Long-term (pasca-launch)
 
@@ -275,8 +280,8 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 | Layer | Status | Catatan |
 |---|---|---|
 | Backend API | ✅ Ready | MVP 100% complete, security solid |
-| Frontend Peserta | ✅ Ready* | *Setelah E2E tests pass |
+| Frontend Peserta | ✅ Ready* | *Setelah E2E tests pass; integrate `GET /api/settings/exam`, forgot password, edit profile |
 | Admin Panel | ✅ Ready* | *Setelah fix `as any` |
 | Infrastructure | ✅ Ready | Queue, scheduler, backup, log rotation terdokumentasi |
 
-**Keputusan:** Sistem bisa go-live setelah 3 item P0 di atas diselesaikan (estimasi total < 2 jam kerja).
+**Keputusan:** Sistem bisa go-live setelah 2 item P0 (fix `as any` di admin + E2E tests pass) diselesaikan. Backend sudah **100% ready**.
