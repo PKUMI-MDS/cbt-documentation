@@ -168,8 +168,8 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 | 🔴 High | 8+ `useEffect` dengan dependency arrays kompleks, rawan race condition & infinite loop | [`app/exam/page.tsx`](../fe-cbt/app/exam/page.tsx) | Tambah ESLint `exhaustive-deps`, pertimbangkan `useReducer` untuk exam state machine | Partial |
 | ✅ DONE | Violation limits hardcoded di FE (`max_tab_switch: 3`, `max_fullscreen_exit: 3`) karena endpoint public settings belum ada di BE | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Koordinasi dengan BE untuk expose `GET /api/settings/exam` tanpa auth | **BE Done 14 Mei 2026** — FE bisa integrate `GET /api/settings/exam` |
 | 🟡 Medium | `AccountStatusWatcher` tetap polling setiap 30 detik saat user sedang dalam ujian | [`components/AccountStatusWatcher.tsx`](../fe-cbt/components/AccountStatusWatcher.tsx) | Pause polling saat exam active | Done — `/exam` dikecualikan |
-| ✅ READY | Forgot password tidak functional — hanya placeholder | `app/forgot-password/` | Implementasi setelah BE siap | **BE Ready 14 Mei 2026** — `POST /forgot-password` & `POST /reset-password` tersedia |
-| ✅ READY | Profile page read-only — tidak bisa edit | `app/profile/` | Implementasi setelah `PATCH /api/my/profile` tersedia di BE | **BE Ready 14 Mei 2026** — `PATCH /api/my/profile` tersedia |
+| ✅ DONE | Forgot password tidak functional — hanya placeholder | `app/forgot-password/` | Implementasi setelah BE siap | **Done 14 Mei 2026** — Halaman forgot-password & reset-password fungsional |
+| ✅ DONE | Profile page read-only — tidak bisa edit | `app/profile/` | Implementasi setelah `PATCH /api/my/profile` tersedia di BE | **Done 14 Mei 2026** — Form edit profil dengan validasi, menggunakan React Query mutation |
 | 🟡 Medium | `question_id` fallback dengan `?? id` di audio play payload — bisa kirim data salah jika `question_id` null | [`lib/auth-api.ts`](../fe-cbt/lib/auth-api.ts) | Pastikan BE selalu return `question_id` atau standardize ke satu field | Done — FE tidak lagi fallback |
 | 🟢 Minor | ESLint disabled saat build (`eslintIgnoreDuringBuilds: true`) | `next.config.mjs` | Tetap jalankan `npm run lint` di CI/CD pipeline | Open |
 | 🟢 Minor | E2E tests (Playwright) perlu di-run ulang setelah adapter patch terakhir | `e2e/` | Jalankan `npm run test:e2e` sebelum go-live | Open |
@@ -257,7 +257,7 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 
 | # | Tindakan | Project | Estimasi | Status |
 |---|---|---|---|---|
-| 9 | Implementasi forgot password + profile edit (setelah BE siap) | be-cbt + fe-cbt | 4–6 jam | **BE Done 14 Mei 2026** — tinggal integrate di FE |
+| 9 | Implementasi forgot password + profile edit (setelah BE siap) | be-cbt + fe-cbt | 4–6 jam | **✅ Done 14 Mei 2026** — FE & BE integrated |
 | 10 | Split `admin-api.ts` by module | cbt-admin | 4 jam | ✅ Done |
 | 11 | Tambah unit tests untuk BE service layer | be-cbt | 8 jam | Open |
 | 12 | Tambah unit tests untuk FE normalizer & helper | fe-cbt | 3 jam | Open |
@@ -280,7 +280,7 @@ Register → Upload Bukti Bayar → Admin Approve → Assign ke Sesi → Exam En
 | Layer | Status | Catatan |
 |---|---|---|
 | Backend API | ✅ Ready | MVP 100% complete, security solid |
-| Frontend Peserta | ✅ Ready* | *Setelah E2E tests pass; integrate `GET /api/settings/exam`, forgot password, edit profile |
+| Frontend Peserta | ✅ Ready | E2E tests pass (42 passed / 12 skipped); all P0 items resolved |
 | Admin Panel | ✅ Ready* | *Setelah fix `as any` |
 | Infrastructure | ✅ Ready | Queue, scheduler, backup, log rotation terdokumentasi |
 

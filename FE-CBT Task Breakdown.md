@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend terbaru.
 
-**Last Updated:** 2026-05-13
+**Last Updated:** 2026-05-14
 
 ---
 
@@ -23,6 +23,11 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | **Server Middleware** | DONE - `middleware.ts` aktif untuk protected route berbasis cookie token |
 | **Global UI States** | DONE - `loading.tsx`, `error.tsx`, `not-found.tsx` |
 | **E2E Tests** | DONE - Playwright updated untuk kontrak FE/BE terbaru dan berhasil dijalankan |
+| **Forgot Password** | DONE — `/forgot-password` & `/reset-password` fungsional |
+| **Edit Profile** | DONE — `PATCH /api/my/profile` integrated, form inline dengan React Query mutation |
+| **Dynamic Violation Limits** | DONE — `GET /api/settings/exam` integrated, anti-cheat menggunakan nilai dari backend |
+| **next/image** | DONE — gambar soal menggunakan `next/image` dengan signed URL support |
+| **Dead Code Cleanup** | DONE — `FlowNav` dihapus dari semua halaman |
 
 ---
 
