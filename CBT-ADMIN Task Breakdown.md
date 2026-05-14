@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan kondisi repo saat ini dan API admin backend.
 
-**Last Updated:** 2026-05-13
+**Last Updated:** 2026-05-14
 
 ---
 
@@ -32,6 +32,7 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | **Violations** | ✅ Custom detail page + severity color coding |
 | **Card View Mobile** | ✅ Table di desktop, card view di mobile |
 | **Security Hardening** | ✅ Sanitasi HTML TipTap + CSP/security headers |
+| **Lint / Build** | ✅ 0 warnings, 0 errors — build pass 29 pages |
 
 ---
 
@@ -188,6 +189,9 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 - ✅ **Input Question Count** — `question_count` bank mapping dinormalisasi minimal `1` saat blur dan serialize.
 - ✅ **Monitoring refresh feedback** — tombol refresh disabled saat fetch dan menampilkan indikator putar.
 - ✅ **Security headers** — CSP, `X-Content-Type-Options`, `Referrer-Policy`, dan `X-Frame-Options` ditambahkan di `next.config.ts`.
+- ✅ **Lint cleanup** — 24 ESLint warnings (unused imports + `<img>` tags) dibersihkan menjadi **0 warnings, 0 errors**.
+- ✅ **`<img>` → `<Image />`** — 4 komponen migrasi ke `next/image` (login, admin-shell, media-upload, question-media).
+- ✅ **`.env.local.example`** — Dokumentasi variabel lingkungan wajib tersedia.
 
 #### Mapping dari `Feature Completion Review`
 
@@ -199,6 +203,8 @@ Dokumen ini adalah breakdown pekerjaan admin frontend `cbt-admin` berdasarkan ko
 | Fix input `question_count` bank mapping | `src/components/bank-mapping-editor.tsx` | ✅ DONE | Nilai kosong dinormalisasi minimal `1` saat blur dan saat serialize `banks_json`. |
 | Tambah visual indicator `Refreshing...` di monitoring detail | `src/components/monitoring-detail.tsx` | ✅ DONE | Tombol refresh disabled saat fetch, icon berputar, dan waktu sinkron terakhir ditampilkan. |
 | Tambah CSP/security headers untuk `cbt-admin` | `next.config.ts` | ✅ DONE | CSP, `nosniff`, `Referrer-Policy`, dan `X-Frame-Options` sudah aktif lewat `headers()`. |
+| Bersihkan ESLint warnings (24 → 0) | 12 file di `src/` | ✅ DONE | Hapus unused imports & variables, migrasi `<img>` ke `<Image />`. |
+| Tambah `.env.local.example` | Root `cbt-admin/` | ✅ DONE | Dokumentasi `CBT_API_BASE_URL`, `NEXT_PUBLIC_API_BASE_URL`, `CBT_ADMIN_TOKEN`. |
 
 ---
 
