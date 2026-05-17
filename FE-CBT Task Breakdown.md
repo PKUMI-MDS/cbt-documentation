@@ -2,7 +2,7 @@
 
 Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kondisi repo saat ini dan kontrak API backend terbaru.
 
-**Last Updated:** 2026-05-14
+**Last Updated:** 2026-05-17
 
 ---
 
@@ -20,7 +20,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | **Anti-Cheat** | DONE - fullscreen, tab switch, right-click/copy prevention, violation logging memakai `violation_type` |
 | **Hasil Ujian** | DONE - total score dan answer stats, tanpa section score karena BE sudah drop section score columns |
 | **API Integration** | DONE - adapter response ada di `lib/auth-api.ts` untuk menormalkan response BE terbaru |
-| **Server Middleware** | DONE - `middleware.ts` aktif untuk protected route berbasis cookie token |
+| **Server Middleware** | DONE - `middleware.ts` aktif, `/reset-password` sudah ditambahkan ke public paths |
 | **Global UI States** | DONE - `loading.tsx`, `error.tsx`, `not-found.tsx` |
 | **E2E Tests** | DONE - Playwright updated untuk kontrak FE/BE terbaru dan berhasil dijalankan |
 | **Forgot Password** | DONE — `/forgot-password` & `/reset-password` fungsional |
@@ -28,6 +28,7 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 | **Dynamic Violation Limits** | DONE — `GET /api/settings/exam` integrated, anti-cheat menggunakan nilai dari backend |
 | **next/image** | DONE — gambar soal menggunakan `next/image` dengan signed URL support |
 | **Dead Code Cleanup** | DONE — `FlowNav` dihapus dari semua halaman |
+| **Exam Page Refactor** | DONE — `QuestionPanel`, `QuestionNavigator`, `SubmitExamModal`, `ViolationModal` diekstrak |
 
 ---
 
@@ -276,8 +277,8 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 | 3 | Disable right click/copy | DONE | Di area exam |
 | 4 | Warning modal violation | DONE | Saat threshold terlewati |
 | 5 | Route guard saat exam aktif | DONE | Cegah keluar tanpa konfirmasi |
-| 6 | Auto-submit on violation limit | FE READY | Fallback default aktif, integrate `GET /api/settings/exam` untuk nilai real |
-| 7 | Dynamic violation limits | **BE DONE** | `GET /api/settings/exam` public tersedia — FE tinggal integrate |
+| 6 | Auto-submit on violation limit | DONE | FE fallback aktif, sudah integrate `GET /api/settings/exam` |
+| 7 | Dynamic violation limits | DONE | `GET /api/settings/exam` public tersedia — FE sudah integrate |
 
 ### P2 - Polish & Optimization
 
@@ -294,7 +295,7 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | Global Exam Settings Integration | **BE DONE** | `GET /api/settings/exam` public tersedia — FE tinggal integrate |
+| 1 | Global Exam Settings Integration | DONE | `GET /api/settings/exam` sudah diintegrasikan |
 | 2 | Media Proxy / Signed URL | DONE | FE memakai `image_url`/`audio_url`, ada `onError` handler |
 | 3 | Account Status Notification | DONE | Polling `GET /api/me` setiap 30 detik, tidak polling saat exam |
 | 4 | Show Result to User enforcement | DONE | History, Dashboard, Completed, Score mengikuti visibility |
@@ -303,8 +304,8 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | Forgot Password | **BE READY** | `POST /forgot-password` dan `POST /reset-password` tersedia — FE tinggal integrate |
-| 2 | Edit Profile | **BE READY** | `PATCH /api/my/profile` tersedia — FE tinggal integrate |
+| 1 | Forgot Password | DONE | `/forgot-password` & `/reset-password` sudah fungsional |
+| 2 | Edit Profile | DONE | `PATCH /api/my/profile` sudah integrate di `ProfileContent.tsx` |
 | 3 | Exam Type di Register | NOT ACTIVE | BE terbaru tidak menerima `exam_type`, jadi FE tidak mengirim field ini |
 
 ### P5 - Client Feedback Refinement
@@ -317,6 +318,27 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 ---
 
 ## Perubahan Terbaru
+
+### 17 Mei 2026
+
+**Audit & Bug Fix:**
+- **BUG FIX KRITIS**: `/reset-password` ditambahkan ke `PUBLIC_PATHS` di `middleware.ts` — sebelumnya user tidak bisa reset password dari link email karena middleware redirect ke `/login`.
+- **FIX**: Timer warning color di `ExamHeader` sekarang menggunakan `remainingSeconds` (prop numerik) sebagai basis perbandingan, bukan string comparison yang tidak akurat untuk jam > 0. Timer berubah merah + pulse saat ≤ 5 menit tersisa.
+- **CLEANUP**: Removed unused `useRouter` dari `ExamPage` dan `usePathname` dari `AuthGuard` yang menyebabkan lint error.
+- **FIX TS**: Type assertion `TS2352` pada violation response di `exam/page.tsx` diperbaiki dengan double cast `as unknown as Record`.
+
+**Refactor Exam Page:**
+- `QuestionPanel` diekstrak ke `components/exam/QuestionPanel.tsx` — berisi stem, image, audio player, options, dan nav prev/next.
+- `QuestionNavigator` diekstrak ke `components/exam/QuestionNavigator.tsx` — sidebar grid navigasi soal.
+- `SubmitExamModal` diekstrak ke `components/exam/SubmitExamModal.tsx` — modal konfirmasi submit ujian.
+- `ViolationModal` diekstrak ke `components/exam/ViolationModal.tsx` — modal pelanggaran dengan auto-submit state.
+- `audioRef` sekarang dikelola di dalam `QuestionPanel`, tidak di parent `ExamPage`.
+- `exam/page.tsx` berkurang dari 847 baris menjadi ~627 baris, hanya berisi state logic dan efek.
+
+**Verifikasi:**
+- `npx tsc --noEmit --pretty false` — PASS
+- `npm run lint` — PASS (hanya 1 warning pre-existing di `payment-proof/[id]`)
+- `npm run build` — PASS (exit code 0, 20 routes)
 
 ### 13 Mei 2026
 
@@ -374,25 +396,13 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 
 ## Next Tasks
 
-1. **BE: expose public exam settings untuk peserta**
-   - ✅ **DONE** — `GET /api/settings/exam` tersedia tanpa auth.
-   - FE harus integrate untuk mengganti hardcoded violation limits.
+Semua task utama sudah selesai. Tidak ada task FE yang menunggu BE saat ini.
 
-2. **Edit Profile**
-   - ✅ **DONE di BE** — `PATCH /api/my/profile` tersedia.
-   - FE tinggal buat form edit profile dan hubungkan ke endpoint.
+**Sisa pekerjaan (opsional / nice to have):**
 
-3. **Forgot Password**
-   - ✅ **DONE di BE** — `POST /forgot-password` dan `POST /reset-password` tersedia.
-   - FE tinggal buat form forgot password dan reset password.
+1. **E2E test update** — Playwright tests perlu dijalankan ulang untuk memverifikasi komponen baru (`QuestionPanel`, `QuestionNavigator`, `SubmitExamModal`, `ViolationModal`).
 
-4. **Lanjutan refactor exam page**
-   - `ExamHeader` sudah diekstrak.
-   - Kandidat ekstraksi berikutnya:
-     - `QuestionPanel`
-     - `QuestionNavigator`
-     - `SubmitExamModal`
-     - `ViolationModal`
+2. **Optimasi `payment-proof/[id]`** — Ada warning `<img>` vs `<Image />` dari Next.js. Jika halaman ini aktif, pertimbangkan migrasi ke `next/image`.
 
 ---
 
@@ -408,37 +418,44 @@ Catatan: **edit profile sudah tersedia di BE** (`PATCH /api/my/profile`) — FE 
 - Start/resume exam.
 - Get question/save answer/submit.
 
-### P1 - Exam Reliability - DONE / FE READY
+### P1 - Exam Reliability - DONE
 
 - Fullscreen + tab switch detection.
 - Violation logging client events.
 - Result visibility.
 - Loading skeleton.
-- Auto-submit on violation limit, FE fallback aktif.
-- Dynamic max tab/fullscreen limit, FE ready tetapi menunggu public settings route.
+- Auto-submit on violation limit, FE fallback aktif dan sudah integrate dynamic settings dari BE.
+- Dynamic max tab/fullscreen limit dari `GET /api/settings/exam`.
 
-### P2 - Polish - MOSTLY DONE
+### P2 - Polish - DONE
 
 - Better UX for retake.
 - Richer history and profile.
 - State management layer.
 - Responsive and accessibility.
-- E2E files tersedia, perlu rerun.
+- Timer warning color akurat menggunakan detik (bukan string comparison).
 
-### P3 - Backend Integration & Settings
+### P3 - Backend Integration & Settings - DONE
 
-- Global exam settings integration: FE ready, menunggu BE public endpoint.
+- Global exam settings integration: done via `GET /api/settings/exam`.
 - Media proxy / signed URL authentication: done.
 - Real-time/polling notifikasi status akun: done.
 - Show result enforcement: done.
 
-### P4 - Missing Features / Nice to Have
+### P4 - Missing Features - DONE
 
-- Forgot password: menunggu BE.
-- Edit profile: menunggu BE.
+- Forgot password: done (`/forgot-password` & `/reset-password` fungsional).
+- Edit profile: done (`ProfileContent.tsx` sudah inline form + `PATCH /api/my/profile`).
 - Exam type register: tidak aktif karena tidak ada di kontrak BE terbaru.
 
 ### P5 - Client Feedback Refinement - DONE
 
 - Validasi No. WhatsApp.
 - Upload bukti bayar disederhanakan.
+
+### P6 - Refactor & Code Quality - DONE
+
+- Exam page refactor: `QuestionPanel`, `QuestionNavigator`, `SubmitExamModal`, `ViolationModal` diekstrak.
+- Bug fix: `/reset-password` ditambahkan ke `PUBLIC_PATHS` middleware.
+- Unused imports dibersihkan (`router` di `ExamPage`, `pathname` di `AuthGuard`).
+- TypeScript error TS2352 pada `exam/page.tsx` diperbaiki.
