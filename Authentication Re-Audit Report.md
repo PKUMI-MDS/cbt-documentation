@@ -9,96 +9,70 @@
 
 ## 1. Ringkasan
 
-Fix autentikasi yang diterapkan pada 20 Mei 2026 **sudah benar dan terekam di codebase** (CORS, cookie SameSite=none, credentials: "include"). Namun, masalah "Unauthenticated" masih terjadi karena **root cause yang berbeda**:
+Masalah "Unauthenticated" di halaman Questions disebabkan oleh **konfigurasi autentikasi Laravel yang tidak compatible dengan Sanctum Bearer token**. Setelah fix diterapkan, muncul masalah baru "Failed to fetch" saat login yang disebabkan oleh **CORS preflight failure akibat kombinasi `credentials: "include"` + `SameSite: "none"` + `Access-Control-Allow-Origin` yang tidak wildcard**.
 
-| Aspek | Status 20 Mei | Status 21 Mei (Setelah Fix) |
-|-------|---------------|----------------------------|
-| CORS Middleware (BE) | ✅ Fix diterapkan | ✅ Masih benar |
-| Cookie SameSite=none (FE) | ✅ Fix diterapkan | ✅ Masih benar |
-| credentials: "include" di core.ts | ✅ Fix diterapkan | ✅ Masih benar |
-| **Sanctum guard hanya ['web']** | ⚠️ Teridentifikasi, belum fix | ✅ **FIXED** |
-| **Auth config tidak punya guard 'api'** | ❌ Belum teridentifikasi | ✅ **FIXED** |
-| **Token Bearer tidak bisa di-validate** | ❌ Belum teridentifikasi | ✅ **FIXED** |
-| Route handler tanpa credentials | ❌ Belum teridentifikasi | ✅ **FIXED** |
-| Login form tanpa credentials | ❌ Belum teridentifikasi | ✅ **FIXED** |
+| Aspek | Status Awal | Status Setelah Fix #1 | Status Final |
+|-------|-------------|----------------------|--------------|
+| CORS Middleware (BE) | ✅ Ada | ✅ Ada | ✅ Fixed preflight |
+| Cookie SameSite | ❌ lax (blocked) | ❌ none + credentials (CORS error) | ✅ **lax** (same-origin) |
+| credentials: "include" | ❌ Tidak ada | ❌ Dihapus semua | ✅ **Dihapus** (tidak perlu) |
+| Sanctum guard | ❌ Hanya ['web'] | ✅ ['web', 'api'] | ✅ ['web', 'api'] |
+| Auth config guard 'api' | ❌ Tidak ada | ✅ Ditambahkan | ✅ Ditambahkan |
+| Bearer token validation | ❌ Gagal | ✅ Berhasil | ✅ Berhasil |
 
 ---
 
 ## 2. Root Cause Analysis
 
-### 2.1 Masalah Utama: Guard Config Laravel
+### 2.1 Masalah Utama #1: Guard Config Laravel (FIXED)
 
 **File:** `be-cbt/config/auth.php`
 
+Sebelumnya tidak ada guard `'api'` dengan driver `'sanctum'`. Sanctum middleware hanya bisa cek guard `'web'` (session driver), yang gagal pada request API stateless.
+
+**Fix:** Tambahkan guard `'api'`:
 ```php
-// SEBELUM (BROKEN):
 'guards' => [
     'web' => [
-        'driver' => 'session',   // ← SESSION driver!
+        'driver' => 'session',
         'provider' => 'users',
     ],
-    // ❌ TIDAK ADA guard 'api'!
+    'api' => [
+        'driver' => 'sanctum',
+        'provider' => 'users',
+    ],
 ],
 ```
+
+### 2.2 Masalah Utama #2: Sanctum Guard Config (FIXED)
 
 **File:** `be-cbt/config/sanctum.php`
 
 ```php
-// SEBELUM (BROKEN):
-'guard' => ['web'],  // ← Hanya guard 'web' yang dicek
+// SEBELUM:
+'guard' => ['web'],
+
+// SESUDAH:
+'guard' => ['web', 'api'],
 ```
 
-**Kenapa ini menyebabkan 401?**
+### 2.3 Masalah #3: "Failed to fetch" — CORS Preflight Error (FIXED)
 
-1. Sanctum menerima request dengan `Authorization: Bearer <token>`
-2. Sanctum cek guard `'web'` → driver-nya **session**
-3. Karena ini request API stateless (tanpa session cookie Laravel), guard `'web'` **gagal**
-4. Sanctum seharusnya fallback ke Bearer token validation, tapi karena tidak ada guard `'api'` dengan driver `sanctum`, fallback juga gagal
-5. Hasil: **401 Unauthenticated** — meski token valid!
+Setelah menambahkan `credentials: "include"` dan `SameSite: "none"`, muncul error baru saat login:
 
-### 2.2 Alur Autentikasi (Before Fix)
+**Penyebab:** Kombinasi berikut melanggar aturan CORS:
+1. `credentials: "include"` pada fetch request
+2. `SameSite: "none"` pada cookie
+3. `Access-Control-Allow-Origin` yang di-set ke origin spesifik (bukan wildcard `*`)
 
-```
-Browser → Next.js Server → fetch(/admin/questions)
-                                    │
-                                    ▼
-                              Header: Bearer <token>
-                              credentials: "include"
-                                    │
-                                    ▼
-                            BE: auth:sanctum middleware
-                                    │
-                                    ▼
-                            Sanctum cek guard ['web']
-                            → driver: session
-                            → tidak ada session cookie
-                            → GAGAL ❌
-                                    │
-                                    ▼
-                            401 Unauthenticated
-```
+Browser Chrome/Edge memblokir request karena:
+- Saat `credentials: "include"` aktif, server HARUS mengembalikan `Access-Control-Allow-Origin` dengan origin yang EXACT MATCH
+- Tapi pada saat yang sama, jika cookie `SameSite: "none"` + `secure: true`, browser juga menolak cookie pada HTTP (non-HTTPS) connection
 
-### 2.3 Alur Autentikasi (After Fix)
-
-```
-Browser → Next.js Server → fetch(/admin/questions)
-                                    │
-                                    ▼
-                              Header: Bearer <token>
-                              credentials: "include"
-                                    │
-                                    ▼
-                            BE: auth:sanctum middleware
-                                    │
-                                    ▼
-                            Sanctum cek guard ['web', 'api']
-                            → guard 'web': session → GAGAL (stateless)
-                            → guard 'api': sanctum → Berhasil! ✅
-                            → Bearer token valid
-                                    │
-                                    ▼
-                            200 OK dengan data
-```
+**Solusi yang benar:**
+- Karena **FE dan BE berada di domain yang sama** (`pkumionline.cloud`), kita TIDAK PERLU `credentials: "include"`
+- Cookie dengan `SameSite: "lax"` sudah cukup untuk same-origin requests
+- Bearer token di header `Authorization` sudah menangani autentikasi
 
 ---
 
@@ -109,13 +83,11 @@ Browser → Next.js Server → fetch(/admin/questions)
 **File:** `be-cbt/config/auth.php`
 
 ```php
-// SESUDAH:
 'guards' => [
     'web' => [
         'driver' => 'session',
         'provider' => 'users',
     ],
-
     'api' => [
         'driver' => 'sanctum',
         'provider' => 'users',
@@ -128,22 +100,91 @@ Browser → Next.js Server → fetch(/admin/questions)
 **File:** `be-cbt/config/sanctum.php`
 
 ```php
-// SESUDAH:
 'guard' => ['web', 'api'],
 ```
 
-### Fix 3: Tambahkan credentials: "include" ke Route Handlers ✅
+### Fix 3: Fix CORS Preflight — Return Early untuk OPTIONS ✅
+
+**File:** `be-cbt/app/Http/Middleware/HandleCors.php`
+
+```php
+if ($request->isMethod('OPTIONS')) {
+    $response = response('', 204);
+    $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
+    $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, X-XSRF-TOKEN');
+    $response->headers->set('Access-Control-Allow-Credentials', 'true');
+    $response->headers->set('Access-Control-Max-Age', '86400');
+    return $response;  // ← Return early, jangan panggil $next()
+}
+```
+
+### Fix 4: Kembalikan Cookie ke SameSite: "lax" ✅
+
+**File:** `cbt-admin/src/lib/admin-api/auth.ts`
+
+```typescript
+export async function setAdminToken(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(TOKEN_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",                          // ← Dari "none" ke "lax"
+    secure: process.env.NODE_ENV === "production",  // ← Dari true ke env-based
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60,
+  });
+}
+```
+
+### Fix 5: Hapus credentials: "include" dari Semua Fetch ✅
+
+**File:** `cbt-admin/src/lib/admin-api/core.ts`
+
+```typescript
+// request() — GET requests
+const response = await fetch(url, {
+  headers,
+  cache: "no-store",
+  // credentials: "include"  ← DIHAPUS
+});
+
+// mutation() — POST/PATCH/DELETE JSON
+const response = await fetch(`${apiBaseUrl()}${path}`, {
+  method: init.method,
+  headers,
+  body: init.body ? JSON.stringify(init.body) : undefined,
+  cache: "no-store",
+  // credentials: "include"  ← DIHAPUS
+});
+
+// multipartMutation() — POST with FormData
+const response = await fetch(`${apiBaseUrl()}${path}`, {
+  method: "POST",
+  headers,
+  body: formData,
+  cache: "no-store",
+  // credentials: "include"  ← DIHAPUS
+});
+```
+
+**File:** `cbt-admin/src/app/login/login-form.tsx`
+
+```typescript
+const response = await fetch(`${apiUrl}/login`, {
+  method: "POST",
+  headers: { ... },
+  body: JSON.stringify({ email, password }),
+  // credentials: "include"  ← DIHAPUS
+});
+```
 
 **File:** `cbt-admin/src/app/api/admin/analytics/route.ts`
 
 ```typescript
 const response = await fetch(apiUrl, {
-  headers: {
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-  },
+  headers: { ... },
   cache: "no-store",
-  credentials: "include",  // ← DITAMBAHKAN
+  // credentials: "include"  ← DIHAPUS
 });
 ```
 
@@ -151,12 +192,9 @@ const response = await fetch(apiUrl, {
 
 ```typescript
 const response = await fetch(`${apiBaseUrl()}/media/${safePath}`, {
-  headers: {
-    Accept: "image/*,audio/*",
-    Authorization: `Bearer ${token}`,
-  },
+  headers: { ... },
   cache: "no-store",
-  credentials: "include",  // ← DITAMBAHKAN
+  // credentials: "include"  ← DIHAPUS
 });
 ```
 
@@ -164,34 +202,62 @@ const response = await fetch(`${apiBaseUrl()}/media/${safePath}`, {
 
 ```typescript
 const response = await fetch(upstreamUrl, {
-  headers: {
-    Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    Authorization: `Bearer ${token}`,
-  },
+  headers: { ... },
   cache: "no-store",
-  credentials: "include",  // ← DITAMBAHKAN
-});
-```
-
-### Fix 4: Tambahkan credentials: "include" ke Login Form ✅
-
-**File:** `cbt-admin/src/app/login/login-form.tsx`
-
-```typescript
-const response = await fetch(`${apiUrl}/login`, {
-  method: "POST",
-  headers: {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ email, password }),
-  credentials: "include",  // ← DITAMBAHKAN
+  // credentials: "include"  ← DIHAPUS
 });
 ```
 
 ---
 
-## 4. Deployment Checklist
+## 4. Arsitektur Autentikasi Final
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    cbt-admin (Next.js)                          │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+│  │ Login Form  │───>│  Server     │───>│  Cookie (httpOnly)  │  │
+│  │ (client)    │    │  Action     │    │  cbt_admin_token    │  │
+│  └─────────────┘    └─────────────┘    └─────────────────────┘  │
+│         │                                              │         │
+│         │ 1. POST /login (Bearer token response)       │         │
+│         │    Tanpa credentials (CORS safe)              │         │
+│         ▼                                              ▼         │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              Server Components / Route Handlers           │   │
+│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │   │
+│  │  │getAdminToken│───>│  fetch()    │───>│  BE API     │  │   │
+│  │  │(read cookie)│    │  + Bearer   │    │  validate   │  │   │
+│  │  └─────────────┘    │  header     │    │  token      │  │   │
+│  │                     └─────────────┘    └─────────────┘  │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ 2. API Request
+                              │    Header: Authorization: Bearer <token>
+                              │    Tanpa credentials (CORS safe)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    be-cbt (Laravel)                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+│  │   CORS      │───>│  Sanctum    │───>│  Guard ['web','api']│  │
+│  │ Middleware  │    │ Middleware  │    │  api: sanctum drv   │  │
+│  └─────────────┘    └─────────────┘    └─────────────────────┘  │
+│                                              │                   │
+│                                              ▼                   │
+│                                       Bearer token validated     │
+│                                       → User authenticated ✅    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Mekanisme autentikasi:**
+1. **Login:** Client form → POST /login → BE return token → Server Action simpan ke cookie (httpOnly, SameSite=lax)
+2. **API Calls:** Server Component baca cookie → kirim Bearer token di header Authorization → BE validate via Sanctum guard 'api'
+3. **Tidak perlu credentials: "include"** karena token dikirim via header, bukan cookie
+
+---
+
+## 5. Deployment Checklist
 
 ### Backend (be-cbt)
 
@@ -199,24 +265,24 @@ const response = await fetch(`${apiUrl}/login`, {
 # 1. Upload file yang diubah:
 # - be-cbt/config/auth.php
 # - be-cbt/config/sanctum.php
+# - be-cbt/app/Http/Middleware/HandleCors.php
 
 # 2. Clear cache (WAJIB!)
 php artisan config:clear
 php artisan cache:clear
 php artisan route:clear
-
-# 3. Verifikasi .env
-# Pastikan SANCTUM_STATEFUL_DOMAINS sesuai domain FE
 ```
 
 ### Frontend (cbt-admin)
 
 ```bash
 # 1. Upload file yang diubah:
+# - cbt-admin/src/lib/admin-api/core.ts
+# - cbt-admin/src/lib/admin-api/auth.ts
+# - cbt-admin/src/app/login/login-form.tsx
 # - cbt-admin/src/app/api/admin/analytics/route.ts
 # - cbt-admin/src/app/api/media/route.ts
 # - cbt-admin/src/app/admin/results/export/route.ts
-# - cbt-admin/src/app/login/login-form.tsx
 
 # 2. Rebuild
 sudo pnpm run build
@@ -224,15 +290,15 @@ sudo pnpm run build
 # 3. Restart service (PM2, systemd, dll)
 ```
 
-### Post-Deploy User Actions
+### Post-Deploy
 
-1. **Logout** dari admin panel
-2. **Login ulang** (untuk mendapatkan token baru yang valid dengan guard 'api')
+1. **Clear browser cache / hard refresh** (Ctrl+Shift+R)
+2. **Login** ke admin panel
 3. **Navigasi ke Questions** — data harusnya sudah bisa dimuat
 
 ---
 
-## 5. Verifikasi Fix
+## 6. Verifikasi Fix
 
 Setelah deploy, verifikasi dengan:
 
@@ -244,48 +310,33 @@ Setelah deploy, verifikasi dengan:
    - ✅ Request header ada `Authorization: Bearer <token>`
    - ✅ Response status **200 OK**
    - ✅ Response body berisi data questions
-
-Jika masih 401, cek Laravel log (`storage/logs/laravel.log`) untuk pesan error detail dari Sanctum.
-
----
-
-## 6. Perbandingan: Sebelum vs Sesudah Fix
-
-| Aspek | Sebelum Fix | Sesudah Fix |
-|-------|-------------|-------------|
-| Guard config | `['web']` only (session) | `['web', 'api']` (session + sanctum) |
-| Bearer token validation | ❌ Gagal (guard 'web' pakai session) | ✅ Berhasil (guard 'api' pakai sanctum) |
-| Session-based auth | ✅ Berhasil | ✅ Tetap berhasil |
-| API stateless auth | ❌ 401 Unauthenticated | ✅ 200 OK |
-| Route handlers credentials | ❌ Tidak include | ✅ Semua include |
-| Login form credentials | ❌ Tidak include | ✅ Include |
+   - ✅ Tidak ada error CORS di console
 
 ---
 
-## 7. Temuan Tambahan (Non-Blocking, Sudah Fix)
-
-### 7.1 Dual Token Storage (Cookie + localStorage)
-
-Token disimpan di dua tempat:
-- **Cookie** (`cbt_admin_token`) → untuk Server Components
-- **localStorage** (`cbt_admin_token`) → untuk Client Components
-
-Ini bisa menyebabkan inkonsistensi jika salah satu tidak ter-update.
-
-**Rekomendasi jangka panjang:** Pilih satu mekanisme saja. Untuk Next.js App Router dengan Server Components, **cookie-based** adalah pilihan yang tepat. Pertimbangkan untuk menghapus `client-auth.ts` jika tidak diperlukan.
-
----
-
-## 8. File yang Diubah
+## 7. File yang Diubah
 
 | # | File | Perubahan |
 |---|------|-----------|
 | 1 | `be-cbt/config/auth.php` | Tambah guard `'api'` dengan driver `'sanctum'` |
 | 2 | `be-cbt/config/sanctum.php` | Update `'guard'` dari `['web']` ke `['web', 'api']` |
-| 3 | `cbt-admin/src/app/api/admin/analytics/route.ts` | Tambah `credentials: "include"` |
-| 4 | `cbt-admin/src/app/api/media/route.ts` | Tambah `credentials: "include"` |
-| 5 | `cbt-admin/src/app/admin/results/export/route.ts` | Tambah `credentials: "include"` |
-| 6 | `cbt-admin/src/app/login/login-form.tsx` | Tambah `credentials: "include"` |
+| 3 | `be-cbt/app/Http/Middleware/HandleCors.php` | Fix preflight OPTIONS return early |
+| 4 | `cbt-admin/src/lib/admin-api/auth.ts` | Kembalikan cookie ke `SameSite: "lax"`, `secure: env-based` |
+| 5 | `cbt-admin/src/lib/admin-api/core.ts` | Hapus `credentials: "include"` dari `request()`, `mutation()`, `multipartMutation()` |
+| 6 | `cbt-admin/src/app/login/login-form.tsx` | Hapus `credentials: "include"` |
+| 7 | `cbt-admin/src/app/api/admin/analytics/route.ts` | Hapus `credentials: "include"` |
+| 8 | `cbt-admin/src/app/api/media/route.ts` | Hapus `credentials: "include"` |
+| 9 | `cbt-admin/src/app/admin/results/export/route.ts` | Hapus `credentials: "include"` |
+
+---
+
+## 8. Pelajaran Penting
+
+1. **Jangan gunakan `credentials: "include"` + `SameSite: "none"` bersamaan** kecuali benar-benar cross-domain dengan setup CORS yang sempurna
+2. **Bearer token di header Authorization** adalah cara paling reliable untuk autentikasi API stateless
+3. **Cookie httpOnly dengan SameSite: "lax"** cukup untuk same-origin/same-site scenarios
+4. **CORS preflight (OPTIONS)** harus di-handle dengan return early, jangan diproses ke controller
+5. **Sanctum guard config** harus mencakup guard yang sesuai dengan driver autentikasi yang digunakan
 
 ---
 
@@ -293,7 +344,8 @@ Ini bisa menyebabkan inkonsistensi jika salah satu tidak ter-update.
 
 - [Authentication Audit & Fix.md](./Authentication%20Audit%20&%20Fix.md) — Audit pertama (20 Mei 2026)
 - [Laravel Sanctum Documentation](https://laravel.com/docs/sanctum)
-- [Laravel Authentication Guards](https://laravel.com/docs/authentication#introduction)
+- [MDN: SameSite Cookie Attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite)
+- [MDN: CORS - Requests with credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#requests_with_credentials)
 
 ---
 
