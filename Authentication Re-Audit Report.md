@@ -9,68 +9,56 @@
 
 ## 1. Ringkasan
 
-Masalah ini melibatkan **3 domain berbeda** yang menyebabkan cookie tidak terbawa antar request:
-- **FE Admin:** `admin-cat.pkumionline.cloud`
-- **BE API:** `be-cbt.pkumionline.cloud`
-- **Cookie domain:** Harus bisa diakses oleh keduanya
+Masalah ini melibatkan **cross-origin cookie** antara FE (`admin-cat.pkumionline.cloud`) dan BE (`be-cbt.pkumionline.cloud`). Cookie yang di-set oleh Server Action (`syncToken`) tidak tersimpan dengan benar karena mekanisme Server Action di Next.js tidak mengirim `Set-Cookie` header ke browser pada saat client-side fetch.
 
 | Aspek | Status Awal | Status Final |
 |-------|-------------|--------------|
 | Sanctum guard | ❌ Hanya ['web'] | ✅ `['web', 'api']` |
 | Auth config guard 'api' | ❌ Tidak ada | ✅ Ditambahkan |
 | CORS allowed origins | ❌ Tidak ada `admin-cat` | ✅ Ditambahkan |
-| Cookie SameSite | ❌ `lax` (blocked cross-origin) | ✅ `none` + `secure: true` |
-| Cookie readable by Server | ❌ Tidak | ✅ Via `middleware.ts` |
+| Cookie setting | ❌ Server Action (tidak reliable) | ✅ API Route (`/api/auth/sync-token`) |
+| Cookie SameSite | ❌ `lax` | ✅ `none` + `secure: true` |
 | credentials: "include" | ❌ Tidak ada | ✅ Ditambahkan ke semua fetch |
-| Client-side navigation | ❌ `router.push` | ✅ `window.location.href` |
 
 ---
 
-## 2. Root Cause: Cross-Origin Cookie + Subdomain Mismatch
+## 2. Root Cause: Server Action Tidak Set Cookie ke Browser
 
-### 2.1 Domain yang Terlibat
-
-```
-┌─────────────────────────────┐     ┌─────────────────────────────┐
-│  admin-cat.pkumionline.cloud │     │  be-cbt.pkumionline.cloud   │
-│  (Next.js Frontend)          │────>│  (Laravel Backend)          │
-│                              │     │                             │
-│  Cookie: cbt_admin_token     │     │  CORS Middleware            │
-│  SameSite: none              │     │  Allowed Origins            │
-│  Secure: true                │     │  + admin-cat domain         │
-└─────────────────────────────┘     └─────────────────────────────┘
-```
-
-**Masalah:**
-1. FE di `admin-cat.pkumionline.cloud`
-2. BE di `be-cbt.pkumionline.cloud`
-3. Cookie di-set oleh Server Action (Next.js) untuk domain FE
-4. Tapi saat fetch ke BE (cross-origin), cookie tidak terbawa karena:
-   - `SameSite: "lax"` → cookie hanya dikirim same-origin
-   - Tidak ada `credentials: "include"` pada fetch
-   - CORS tidak mengizinkan origin FE
-
-### 2.2 Kenapa "Sesi admin tidak valid"
+### 2.1 Apa yang Terjadi
 
 ```
-1. Login berhasil → token diterima
-2. syncToken() → set cookie (SameSite=lax, untuk domain FE saja)
-3. window.location.href = "/admin" → full page nav
-4. /admin layout → validateAdminSession() → getAdminToken()
-5. getAdminToken() baca cookie → cookie ADA (same-origin)
-6. validateAdminSession() call /me dengan Bearer token → BERHASIL
-7. Dashboard render → BERHASIL
-8. User klik "Questions" → Server Component fetch /admin/questions
-9. fetch() di core.ts → TIDAK ada credentials: "include"
-10. Cookie tidak terbawa ke BE → Sanctum tidak bisa auth via cookie
-11. Bearer token di header → Sanctum guard 'api' validate → BERHASIL
-12. Tapi... jika ada masalah dengan token → 401 Unauthenticated
+Login Form (client-side fetch)
+    ↓
+POST /api/login → BE return token
+    ↓
+syncToken(token) → Server Action
+    ↓
+Server Action panggil cookies().set() → cookie di-set di response Server Action
+    ↓
+TAPI... Server Action response tidak mengirim Set-Cookie header ke browser
+    ↓
+window.location.href = "/admin" → full page nav
+    ↓
+/admin Server Component → getAdminToken() → cookie KOSONG
+    ↓
+validateAdminSession() → GAGAL → redirect /logout?reason=invalid
 ```
 
-**Ternyata masalahnya lebih kompleks:** Cookie set oleh Server Action tidak tersimpan dengan benar karena:
-- Next.js Server Action set cookie untuk response ke browser
-- Tapi cookie attribute `SameSite: "lax"` + `secure: false` (karena env check)
-- Browser menolak cookie karena cross-origin request
+### 2.2 Kenapa Server Action Tidak Bisa Set Cookie yang Reliable
+
+Server Action di Next.js App Router:
+- Bisa set cookie via `cookies().set()`
+- Tapi cookie tersebut hanya tersedia untuk **subsequent Server Action calls**
+- Tidak otomatis dikirim ke browser sebagai `Set-Cookie` header pada response HTTP
+- Browser tidak menyimpan cookie tersebut
+
+### 2.3 Solusi: Gunakan API Route untuk Set Cookie
+
+API Route (Route Handler) di Next.js:
+- Bisa set cookie via `cookies().set()`
+- Response dari API Route mengandung `Set-Cookie` header
+- Browser menerima dan menyimpan cookie
+- Cookie tersedia untuk subsequent requests
 
 ---
 
@@ -127,7 +115,64 @@ $allowedOrigins = [
 ];
 ```
 
-### Fix 5: Cookie SameSite: "none" + Secure: true ✅
+### Fix 5: Buat API Route untuk Set Cookie ✅ ⬅️ KEY FIX
+
+**File baru:** `cbt-admin/src/app/api/auth/sync-token/route.ts`
+
+```typescript
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+const TOKEN_COOKIE = "cbt_admin_token";
+
+export async function POST(request: Request) {
+  try {
+    const { token } = await request.json();
+
+    if (!token || typeof token !== "string") {
+      return NextResponse.json({ error: "Token required" }, { status: 400 });
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set(TOKEN_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+}
+```
+
+### Fix 6: Login Form — Panggil API Route untuk Set Cookie ✅
+
+**File:** `cbt-admin/src/app/login/login-form.tsx`
+
+```typescript
+// SEBELUM (BROKEN - Server Action):
+await syncToken(data.token);
+
+// SESUDAH (FIXED - API Route):
+const syncRes = await fetch("/api/auth/sync-token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ token: data.token }),
+});
+
+if (!syncRes.ok) {
+  throw new Error("Gagal menyimpan sesi login.");
+}
+
+// Force a full page navigation to /admin so the server can read the cookie
+window.location.href = "/admin";
+```
+
+### Fix 7: Cookie SameSite: "none" + Secure: true ✅
 
 **File:** `cbt-admin/src/lib/admin-api/auth.ts`
 
@@ -144,7 +189,7 @@ export async function setAdminToken(token: string) {
 }
 ```
 
-### Fix 6: Tambahkan credentials: "include" ke Semua Fetch ✅
+### Fix 8: Tambahkan credentials: "include" ke Semua Fetch ✅
 
 **File:** `cbt-admin/src/lib/admin-api/core.ts`
 
@@ -161,51 +206,6 @@ const response = await fetch(url, {
 **File:** `cbt-admin/src/app/api/media/route.ts`
 **File:** `cbt-admin/src/app/admin/results/export/route.ts`
 
-### Fix 7: Tambahkan Middleware untuk Cookie Persistence ✅
-
-**File baru:** `cbt-admin/src/middleware.ts`
-
-```typescript
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
-  const token = request.cookies.get("cbt_admin_token")?.value;
-  if (token) {
-    response.cookies.set("cbt_admin_token", token, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-  }
-
-  return response;
-}
-
-export const config = {
-  matcher: ["/admin/:path*", "/login", "/logout"],
-};
-```
-
-### Fix 8: Gunakan window.location.href untuk Full Page Navigation ✅
-
-**File:** `cbt-admin/src/app/login/login-form.tsx`
-
-```typescript
-// Save token to localStorage for client-side access
-localStorage.setItem("cbt_admin_token", data.token);
-
-// Save token to cookie via server action
-await syncToken(data.token);
-
-// Force a full page navigation
-window.location.href = "/admin";
-```
-
 ---
 
 ## 4. Arsitektur Autentikasi Final
@@ -217,20 +217,19 @@ window.location.href = "/admin";
 │  │  Login Form (admin-cat.pkumionline.cloud)                       │   │
 │  │  1. User submit form                                            │   │
 │  │  2. fetch() POST /login ke BE                                   │   │
-│  │     → credentials: "include"                                    │   │
 │  │  3. Terima token dari BE                                        │   │
-│  │  4. Simpan ke localStorage                                      │   │
-│  │  5. syncToken() → Server Action set cookie                      │   │
-│  │     → SameSite: none, Secure: true                              │   │
+│  │  4. fetch() POST /api/auth/sync-token (API Route)               │   │
+│  │     → Response dengan Set-Cookie header                         │   │
+│  │  5. Browser simpan cookie cbt_admin_token                       │   │
 │  │  6. window.location.href = "/admin"                             │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                              │                                          │
 │                              ▼                                          │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  /admin (Server Component)                                      │   │
-│  │  7. Middleware baca cookie → set ulang dengan attribute benar   │   │
-│  │  8. validateAdminSession() → getAdminToken() → baca cookie      │   │
-│  │  9. fetch() /me dengan Bearer token + credentials: "include"    │   │
+│  │  7. validateAdminSession() → getAdminToken() → baca cookie      │   │
+│  │  8. Cookie ADA! ✅                                              │   │
+│  │  9. fetch() /me dengan Bearer token                             │   │
 │  │  10. BE validate via Sanctum guard 'api' → BERHASIL             │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                              │                                          │
@@ -268,10 +267,11 @@ php artisan route:clear
 # - cbt-admin/src/lib/admin-api/core.ts
 # - cbt-admin/src/lib/admin-api/auth.ts
 # - cbt-admin/src/app/login/login-form.tsx
+# - cbt-admin/src/app/login/page.tsx
 # - cbt-admin/src/app/api/admin/analytics/route.ts
 # - cbt-admin/src/app/api/media/route.ts
 # - cbt-admin/src/app/admin/results/export/route.ts
-# - cbt-admin/src/middleware.ts (BARU)
+# - cbt-admin/src/app/api/auth/sync-token/route.ts (BARU)
 
 # Rebuild
 sudo pnpm run build
@@ -281,7 +281,11 @@ sudo pnpm run build
 
 1. **Hard refresh browser** (Ctrl+Shift+R)
 2. **Login** ke admin panel
-3. **Navigasi ke Questions** — data harusnya sudah bisa dimuat
+3. Cek di DevTools → Application → Cookies:
+   - Cookie `cbt_admin_token` harus ada
+   - SameSite: None
+   - Secure: true
+4. **Navigasi ke Questions** — data harusnya sudah bisa dimuat
 
 ---
 
@@ -293,13 +297,13 @@ Setelah deploy, verifikasi dengan:
 2. Login ke admin panel
 3. Cek sequence request:
    - ✅ `POST /api/login` → 200 OK dengan token
+   - ✅ `POST /api/auth/sync-token` → 200 OK
    - ✅ Response headers ada `Set-Cookie: cbt_admin_token=...`
    - ✅ `GET /admin` → 200 OK (full page navigation)
    - ✅ Request headers ada `Cookie: cbt_admin_token=...`
    - ✅ `GET /api/admin/questions` → 200 OK dengan data
 4. Cek Application → Cookies:
    - ✅ Cookie `cbt_admin_token` ada dengan value token
-   - ✅ Domain: `.pkumionline.cloud` atau `admin-cat.pkumionline.cloud`
    - ✅ SameSite: None
    - ✅ Secure: true
 
@@ -314,23 +318,23 @@ Setelah deploy, verifikasi dengan:
 | 3 | `be-cbt/app/Http/Middleware/HandleCors.php` | Fix preflight + tambah domain `admin-cat` |
 | 4 | `cbt-admin/src/lib/admin-api/auth.ts` | Cookie `SameSite: "none"`, `secure: true` |
 | 5 | `cbt-admin/src/lib/admin-api/core.ts` | Tambah `credentials: "include"` ke semua fetch |
-| 6 | `cbt-admin/src/app/login/login-form.tsx` | `window.location.href` + localStorage backup |
-| 7 | `cbt-admin/src/app/api/admin/analytics/route.ts` | Tambah `credentials: "include"` |
-| 8 | `cbt-admin/src/app/api/media/route.ts` | Tambah `credentials: "include"` |
-| 9 | `cbt-admin/src/app/admin/results/export/route.ts` | Tambah `credentials: "include"` |
-| 10 | `cbt-admin/src/middleware.ts` | **BARU** — Cookie persistence middleware |
+| 6 | `cbt-admin/src/app/login/login-form.tsx` | Panggil API Route `/api/auth/sync-token` |
+| 7 | `cbt-admin/src/app/login/page.tsx` | Fix searchParams destructuring |
+| 8 | `cbt-admin/src/app/api/admin/analytics/route.ts` | Tambah `credentials: "include"` |
+| 9 | `cbt-admin/src/app/api/media/route.ts` | Tambah `credentials: "include"` |
+| 10 | `cbt-admin/src/app/admin/results/export/route.ts` | Tambah `credentials: "include"` |
+| 11 | `cbt-admin/src/app/api/auth/sync-token/route.ts` | **BARU** — API Route untuk set cookie |
 
 ---
 
 ## 8. Pelajaran Penting
 
-1. **Cross-origin cookie memerlukan `SameSite: "none"` + `Secure: true"`**
-2. **`credentials: "include"` wajib pada fetch cross-origin yang butuh cookie**
-3. **CORS allowed origins harus mencakup SEMUA domain FE yang digunakan**
-4. **Next.js middleware bisa digunakan untuk memastikan cookie attribute konsisten**
-5. **Server Action set cookie tidak selalu langsung tersimpan — perlu verify di browser**
-6. **localStorage bisa sebagai fallback** untuk client-side token access
-7. **Sanctum guard config harus mencakup guard yang sesuai dengan driver autentikasi**
+1. **Server Action tidak reliable untuk set cookie yang perlu dibaca oleh Server Component** — gunakan API Route sebagai alternatif
+2. **API Route mengirim `Set-Cookie` header ke browser** — cookie tersimpan dan bisa dibaca oleh Server Component
+3. **Cross-origin cookie memerlukan `SameSite: "none"` + `Secure: true"`**
+4. **`credentials: "include"` wajib pada fetch cross-origin yang butuh cookie**
+5. **CORS allowed origins harus mencakup SEMUA domain FE yang digunakan**
+6. **Sanctum guard config harus mencakup guard yang sesuai dengan driver autentikasi**
 
 ---
 
@@ -340,7 +344,7 @@ Setelah deploy, verifikasi dengan:
 - [Laravel Sanctum Documentation](https://laravel.com/docs/sanctum)
 - [MDN: SameSite Cookie Attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite)
 - [MDN: CORS - Requests with credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#requests_with_credentials)
-- [Next.js Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware)
+- [Next.js Route Handlers](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
 
 ---
 
